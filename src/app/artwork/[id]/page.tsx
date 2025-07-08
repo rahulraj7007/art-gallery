@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import ArtworkClient from './ArtworkClient';
 
@@ -14,22 +14,6 @@ interface Artwork {
   category: string;
   year: number;
   inStock: boolean;
-}
-
-// Generate static params for all artworks at build time
-export async function generateStaticParams() {
-  try {
-    const artworksRef = collection(db, 'artworks');
-    const snapshot = await getDocs(artworksRef);
-    
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    // Return empty array as fallback
-    return [];
-  }
 }
 
 interface PageProps {
