@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/lib/store/cartStore';
 import { X, Plus, Minus, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react';
@@ -38,6 +37,26 @@ export default function CartSidebar() {
     };
   }, [isOpen, closeCart]);
 
+  const handleCheckout = () => {
+    // Create Stripe checkout session
+    fetch('/api/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    })
+    .catch(error => {
+      console.error('Checkout error:', error);
+    });
+  };
+
   if (!isOpen) return null;
 
   const totalItems = getTotalItems();
@@ -55,8 +74,8 @@ export default function CartSidebar() {
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl z-50 transform transition-transform">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <h2 className="text-lg font-serif font-medium text-gray-900">
               Shopping Cart ({totalItems})
             </h2>
             <button
@@ -72,39 +91,41 @@ export default function CartSidebar() {
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-serif font-medium text-gray-900 mb-2">
                   Your cart is empty
                 </h3>
-                <p className="text-gray-500 mb-6">
+                <p className="text-gray-500 font-serif mb-6">
                   Add some beautiful artwork to get started
                 </p>
                 <Link
                   href="/gallery"
                   onClick={closeCart}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="bg-gray-900 text-white px-6 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
                 >
                   Browse Gallery
                 </Link>
               </div>
             ) : (
-              <div className="p-4 space-y-4">
+              <div className="p-6 space-y-6">
                 {items.map((item) => (
                   <div
                     key={item.artwork.id}
-                    className="flex space-x-4 bg-gray-50 rounded-lg p-3"
+                    className="flex space-x-4"
                   >
-                    {/* Artwork Image */}
+                    {/* Artwork Image - Using img tag to avoid external hostname error */}
                     <Link
                       href={`/artwork/${item.artwork.id}`}
                       onClick={closeCart}
                       className="flex-shrink-0"
                     >
-                      <Image
+                      <img
                         src={item.artwork.imageUrl}
                         alt={item.artwork.title}
-                        width={80}
-                        height={100}
-                        className="w-20 h-25 object-cover rounded-lg hover:opacity-75 transition-opacity"
+                        className="w-20 h-25 object-cover hover:opacity-75 transition-opacity"
+                        onError={(e) => {
+                          // Fallback for broken images
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
+                        }}
                       />
                     </Link>
 
@@ -115,17 +136,17 @@ export default function CartSidebar() {
                         onClick={closeCart}
                         className="block"
                       >
-                        <h3 className="text-sm font-medium text-gray-900 hover:text-indigo-600 transition-colors">
+                        <h3 className="text-sm font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors">
                           {item.artwork.title}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 font-serif">
                           by {item.artwork.artist}
                         </p>
                       </Link>
 
                       <div className="flex items-center justify-between mt-2">
-                        <div className="text-sm font-medium text-indigo-600">
-                          ${item.artwork.price.toLocaleString()}
+                        <div className="text-sm font-serif font-medium text-gray-900">
+                          {item.artwork.price?.toLocaleString()} SEK
                         </div>
 
                         {/* Quantity Controls */}
@@ -138,7 +159,7 @@ export default function CartSidebar() {
                             <Minus className="w-4 h-4" />
                           </button>
                           
-                          <span className="w-8 text-center text-sm font-medium">
+                          <span className="w-8 text-center text-sm font-serif font-medium">
                             {item.quantity}
                           </span>
                           
@@ -153,8 +174,8 @@ export default function CartSidebar() {
 
                       {/* Subtotal and Remove */}
                       <div className="flex items-center justify-between mt-2">
-                        <div className="text-sm font-semibold text-gray-900">
-                          Subtotal: ${(item.artwork.price * item.quantity).toLocaleString()}
+                        <div className="text-sm font-serif font-medium text-gray-900">
+                          Subtotal: {((item.artwork.price || 0) * item.quantity).toLocaleString()} SEK
                         </div>
                         
                         <button
@@ -171,10 +192,10 @@ export default function CartSidebar() {
 
                 {/* Clear Cart Button */}
                 {items.length > 0 && (
-                  <div className="pt-4 border-t border-gray-200">
+                  <div className="pt-4 border-t border-gray-100">
                     <button
                       onClick={clearCart}
-                      className="w-full text-sm text-red-600 hover:text-red-700 transition-colors"
+                      className="w-full text-sm text-red-600 hover:text-red-700 transition-colors font-serif"
                     >
                       Clear all items
                     </button>
@@ -186,23 +207,26 @@ export default function CartSidebar() {
 
           {/* Footer */}
           {items.length > 0 && (
-            <div className="border-t border-gray-200 p-4 space-y-4">
+            <div className="border-t border-gray-100 p-6 space-y-4">
               {/* Total */}
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">Total</span>
-                <span className="text-lg font-bold text-indigo-600">
-                  ${totalPrice.toLocaleString()}
+                <span className="text-lg font-serif font-medium text-gray-900">Total</span>
+                <span className="text-lg font-serif font-bold text-gray-900">
+                  {totalPrice.toLocaleString()} SEK
                 </span>
               </div>
 
               {/* Shipping Notice */}
-              <p className="text-xs text-gray-500 text-center">
-                Free shipping on all orders. Taxes calculated at checkout.
+              <p className="text-xs text-gray-500 text-center font-serif">
+                Certificate of authenticity included. Secure packaging and insured shipping.
               </p>
 
               {/* Action Buttons */}
-              <div className="space-y-2">
-                <button className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center">
+              <div className="space-y-3">
+                <button 
+                  onClick={handleCheckout}
+                  className="w-full bg-gray-900 text-white py-3 font-serif font-medium hover:bg-gray-800 transition-colors flex items-center justify-center"
+                >
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -210,7 +234,7 @@ export default function CartSidebar() {
                 <Link
                   href="/gallery"
                   onClick={closeCart}
-                  className="block w-full text-center py-2 text-indigo-600 hover:text-indigo-700 transition-colors"
+                  className="block w-full text-center py-2 text-gray-600 hover:text-gray-900 transition-colors font-serif"
                 >
                   Continue Shopping
                 </Link>

@@ -4,60 +4,46 @@ import { ArrowRight, Palette, Film, BookOpen, Hammer, Paintbrush } from 'lucide-
 
 export default function AboutPage() {
   return (
-    <>
-      {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
-        {/* Abstract Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-yellow-50 to-blue-50">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-20 left-10 w-96 h-96 bg-gradient-to-br from-yellow-200/40 to-orange-300/20 rounded-full blur-3xl transform rotate-12"></div>
-            <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-bl from-blue-200/30 to-cyan-300/20 rounded-full blur-3xl transform -rotate-12"></div>
-            <div className="absolute top-1/2 left-1/3 w-72 h-72 bg-gradient-to-tr from-emerald-700/20 to-green-600/15 rounded-full blur-3xl transform rotate-45"></div>
-          </div>
-        </div>
-
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-serif font-light text-gray-900 mb-6 leading-tight">
-            Aja Eriksson
-            <span className="block text-4xl md:text-5xl font-serif font-normal text-gray-800">
-              von Weissenberg
-            </span>
+    <div className="min-h-screen bg-white">
+      {/* Clean Header */}
+      <section className="pt-16 pb-12 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h1 className="text-4xl md:text-5xl font-serif font-light text-gray-900 mb-4">
+            Aja Eriksson von Weissenberg
           </h1>
-          <p className="text-xl md:text-2xl text-gray-700 font-serif font-light leading-relaxed">
-            A distinguished voice in Gothenburg's cultural landscape
+          <p className="text-xl text-gray-600 font-serif leading-relaxed">
+            Contemporary Artist & Distinguished Voice in Gothenburg's Cultural Landscape
           </p>
         </div>
       </section>
 
       {/* Artist Statement */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-serif font-light text-gray-900 mb-8">Artist Statement</h2>
-            <blockquote className="text-2xl font-serif italic text-gray-800 leading-relaxed relative">
-              <div className="absolute -top-4 -left-4 text-6xl text-yellow-400 font-serif">&ldquo;</div>
-              My works move between light and dark, longing and farewell. The motifs return, 
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl font-serif font-medium text-gray-900 mb-8">Artist Statement</h2>
+            <blockquote className="text-xl font-serif italic text-gray-700 leading-relaxed border-l-4 border-gray-200 pl-8 mx-auto max-w-3xl text-left">
+              "My works move between light and dark, longing and farewell. The motifs return, 
               like old friends. You might need to rest for a bit, as age makes itself heard. 
               You lie down on the sofa. Then unexpected sneaks back into the image again. 
-              Situations arise, with new stories.
-              <div className="absolute -bottom-8 -right-4 text-6xl text-yellow-400 font-serif">&rdquo;</div>
+              Situations arise, with new stories."
             </blockquote>
-            <p className="text-lg font-serif text-gray-600 mt-8">— Aja Eriksson von Weissenberg</p>
+            <p className="text-gray-600 font-serif mt-6">— Aja Eriksson von Weissenberg</p>
           </div>
         </div>
       </section>
 
       {/* Biography */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <h2 className="text-4xl font-serif font-light text-gray-900 mb-8">Artistic Journey</h2>
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+            <div className="space-y-8">
+              <h2 className="text-3xl font-serif font-light text-gray-900 mb-8">Artistic Journey</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h3 className="text-xl font-serif font-medium text-gray-900 mb-3">Education & Foundation</h3>
-                  <p className="text-lg text-gray-700 font-serif leading-relaxed">
+                  <h3 className="text-lg font-serif font-medium text-gray-900 mb-4">Education & Foundation</h3>
+                  <p className="text-gray-700 font-serif leading-relaxed">
                     After graduating from HDK (Högskolan för design och konsthantverk) in 1972, 
                     Aja embarked on a remarkable artistic journey that would span decades and 
                     encompass an extraordinary range of creative disciplines.
@@ -65,20 +51,20 @@ export default function AboutPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-serif font-medium text-gray-900 mb-3">Diverse Training</h3>
-                  <p className="text-lg text-gray-700 font-serif leading-relaxed">
+                  <h3 className="text-lg font-serif font-medium text-gray-900 mb-4">Diverse Training</h3>
+                  <p className="text-gray-700 font-serif leading-relaxed">
                     Her broad artistic training reflects a deep commitment to mastering various 
-                    forms of expression &mdash; from the industrial craft of welding to the delicate 
-                    art of bookbinding, from scriptwriting at DI to the ancient technique of 
+                    forms of expression — from the industrial craft of welding to the delicate 
+                    art of bookbinding, from scriptwriting to the ancient technique of 
                     fresco painting at the Royal Institute of Art.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-serif font-medium text-gray-900 mb-3">Cultural Impact</h3>
-                  <p className="text-lg text-gray-700 font-serif leading-relaxed">
+                  <h3 className="text-lg font-serif font-medium text-gray-900 mb-4">Cultural Impact</h3>
+                  <p className="text-gray-700 font-serif leading-relaxed">
                     With a long list of exhibitions, short films, illustrations, and scenographic 
-                    works, Aja has contributed significantly to Gothenburg&apos;s cultural life. Her 
+                    works, Aja has contributed significantly to Gothenburg's cultural life. Her 
                     public commissions throughout the city stand as testaments to her enduring 
                     artistic vision.
                   </p>
@@ -88,64 +74,47 @@ export default function AboutPage() {
 
             <div className="space-y-8">
               {/* Skills Grid */}
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                <h3 className="text-2xl font-serif font-light text-gray-900 mb-6">Artistic Disciplines</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-lg flex items-center justify-center">
-                      <Paintbrush className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Fresco Painting</span>
+              <div className="bg-white border border-gray-200 rounded-lg p-8">
+                <h3 className="text-xl font-serif font-medium text-gray-900 mb-6">Artistic Disciplines</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex items-center space-x-3 py-2">
+                    <Paintbrush className="h-5 w-5 text-gray-600" />
+                    <span className="font-serif text-gray-700">Oil Painting & Fresco</span>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
-                      <Film className="h-5 w-5 text-cyan-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Short Films</span>
+                  <div className="flex items-center space-x-3 py-2">
+                    <Film className="h-5 w-5 text-gray-600" />
+                    <span className="font-serif text-gray-700">Short Films & Scriptwriting</span>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Bookbinding</span>
+                  <div className="flex items-center space-x-3 py-2">
+                    <BookOpen className="h-5 w-5 text-gray-600" />
+                    <span className="font-serif text-gray-700">Bookbinding & Illustration</span>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                      <Hammer className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Welding</span>
+                  <div className="flex items-center space-x-3 py-2">
+                    <Hammer className="h-5 w-5 text-gray-600" />
+                    <span className="font-serif text-gray-700">Welding & Metalwork</span>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-                      <Palette className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Scenography</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <span className="font-serif text-gray-700">Scriptwriting</span>
+                  <div className="flex items-center space-x-3 py-2">
+                    <Palette className="h-5 w-5 text-gray-600" />
+                    <span className="font-serif text-gray-700">Scenography & Public Art</span>
                   </div>
                 </div>
               </div>
 
               {/* Current Exhibition */}
-              <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-2xl p-8 border border-gray-100">
-                <h3 className="text-xl font-serif font-medium text-gray-900 mb-4">Current Exhibition</h3>
-                <p className="text-lg font-serif text-gray-700 leading-relaxed mb-4">
-                  Aja Eriksson is currently exhibiting paintings and other works at 
-                  <span className="font-medium"> Galleri Anna H</span>. The public is invited 
-                  to experience her distinctive artistic voice.
-                </p>
+              <div className="bg-white border border-gray-200 rounded-lg p-8">
+                <h3 className="text-lg font-serif font-medium text-gray-900 mb-4">Current Exhibition</h3>
+                <div className="space-y-2 mb-4">
+                  <p className="text-gray-900 font-serif">"Echoes of the North"</p>
+                  <p className="text-gray-600 font-serif">Galleri Anna H, Göteborg</p>
+                  <p className="text-gray-500 font-serif text-sm">Through August 2025</p>
+                </div>
                 <Link
                   href="/gallery"
-                  className="inline-flex items-center text-gray-900 font-serif font-medium hover:text-gray-700 transition-colors"
+                  className="inline-flex items-center text-gray-900 font-serif font-medium hover:text-gray-700 transition-colors border-b border-gray-300 hover:border-gray-700 pb-1"
                 >
                   View available works
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -157,40 +126,68 @@ export default function AboutPage() {
       </section>
 
       {/* Legacy Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-serif font-light text-gray-900 mb-8">
-            Gothenburg's Cultural Heritage
-          </h2>
-          <p className="text-xl text-gray-700 font-serif leading-relaxed mb-8">
-            For decades, Aja has been an integral part of Gothenburg&apos;s artistic community. 
-            Her public commissions can be seen throughout the city, marking moments and 
-            places with her distinctive vision. From galleries to public spaces, her work 
-            continues to enrich the cultural landscape of the city.
-          </p>
-          <p className="text-lg text-gray-600 font-serif leading-relaxed mb-12">
-            Each piece reflects a lifetime of dedication to the arts, where technical mastery 
-            meets profound emotional expression. Her works invite viewers into intimate 
-            conversations about light and shadow, presence and absence, the familiar and 
-            the unexpected.
-          </p>
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-serif font-light text-gray-900 mb-8">
+              Gothenburg's Cultural Heritage
+            </h2>
+          </div>
           
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          <div className="space-y-8 mb-12">
+            <p className="text-lg text-gray-700 font-serif leading-relaxed">
+              For decades, Aja has been an integral part of Gothenburg's artistic community. 
+              Her public commissions can be seen throughout the city, marking moments and 
+              places with her distinctive vision. From galleries to public spaces, her work 
+              continues to enrich the cultural landscape of the city.
+            </p>
+            <p className="text-gray-600 font-serif leading-relaxed">
+              Each piece reflects a lifetime of dedication to the arts, where technical mastery 
+              meets profound emotional expression. Her works invite viewers into intimate 
+              conversations about light and shadow, presence and absence, the familiar and 
+              the unexpected.
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/gallery"
-              className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-8 py-4 rounded-full hover:from-gray-800 hover:to-gray-700 transition-all duration-300 font-serif font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="bg-gray-900 text-white px-8 py-3 rounded hover:bg-gray-800 transition-colors font-serif font-medium text-center"
             >
               Explore Available Works
             </Link>
             <Link
               href="/contact"
-              className="border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-full hover:bg-gray-900 hover:text-white transition-all duration-300 font-serif font-medium"
+              className="border border-gray-300 text-gray-900 px-8 py-3 rounded hover:bg-gray-100 transition-colors font-serif font-medium text-center"
             >
               Inquire About Commissions
             </Link>
           </div>
         </div>
       </section>
-    </>
+
+      {/* Recognition Section */}
+      <section className="py-16 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center">
+            <h3 className="text-2xl font-serif font-light text-gray-900 mb-8">Recognition & Experience</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <div className="space-y-2">
+                <div className="text-2xl font-serif font-light text-gray-900">50+</div>
+                <div className="text-gray-600 font-serif text-sm">Years of Excellence</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-serif font-light text-gray-900">HDK</div>
+                <div className="text-gray-600 font-serif text-sm">Graduate 1972</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-serif font-light text-gray-900">Multiple</div>
+                <div className="text-gray-600 font-serif text-sm">Public Commissions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

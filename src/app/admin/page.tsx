@@ -22,7 +22,10 @@ import {
   CheckCircle,
   AlertCircle,
   ImageIcon,
-  Save
+  Save,
+  MessageSquare,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
 
 interface Artwork {
@@ -52,11 +55,24 @@ interface Order {
   shippingAddress: any;
 }
 
+interface Inquiry {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  inquiryType: string;
+  timestamp: any;
+  status: 'new' | 'responded' | 'archived';
+  read: boolean;
+}
+
 export default function AdminDashboard() {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddArtworkModal, setShowAddArtworkModal] = useState(false);
 
@@ -96,6 +112,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadArtworks();
     loadOrders();
+    loadInquiries();
   }, []);
 
   const loadArtworks = async () => {
@@ -121,11 +138,59 @@ export default function AdminDashboard() {
         ...doc.data()
       })) as Order[];
       setOrders(orderData);
-      setLoading(false);
     } catch (error) {
       console.error('Error loading orders:', error);
+    }
+  };
+
+  const loadInquiries = async () => {
+    try {
+      const q = query(collection(db, 'inquiries'), orderBy('timestamp', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const inquiryData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Inquiry[];
+      setInquiries(inquiryData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading inquiries:', error);
       setLoading(false);
     }
+  };
+
+  // Inquiry management functions
+  const markInquiryAsRead = async (inquiryId: string) => {
+    try {
+      await updateDoc(doc(db, 'inquiries', inquiryId), {
+        read: true
+      });
+      loadInquiries();
+    } catch (error) {
+      console.error('Error marking inquiry as read:', error);
+    }
+  };
+
+  const updateInquiryStatus = async (inquiryId: string, status: 'new' | 'responded' | 'archived') => {
+    try {
+      await updateDoc(doc(db, 'inquiries', inquiryId), {
+        status: status,
+        read: true
+      });
+      loadInquiries();
+    } catch (error) {
+      console.error('Error updating inquiry status:', error);
+    }
+  };
+
+  const openEmailResponse = (inquiry: Inquiry) => {
+    const subject = `Re: ${inquiry.subject}`;
+    const body = `Hello ${inquiry.name},\n\nThank you for your inquiry about "${inquiry.subject}".\n\n[Your response here]\n\nBest regards,\nAja Eriksson von Weissenberg`;
+    
+    window.open(`mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    
+    // Mark as read when responding
+    markInquiryAsRead(inquiry.id);
   };
 
   // Stats calculations
@@ -134,6 +199,9 @@ export default function AdminDashboard() {
   const totalArtworks = artworks.length;
   const forSaleArtworks = artworks.filter(art => art.availabilityType === 'for-sale' || !art.availabilityType).length;
   const enquireOnlyArtworks = artworks.filter(art => art.availabilityType === 'enquire-only').length;
+  const totalInquiries = inquiries.length;
+  const unreadInquiries = inquiries.filter(inq => !inq.read).length;
+  const newInquiries = inquiries.filter(inq => inq.status === 'new').length;
 
   const StatCard = ({ title, value, icon: Icon, color = 'indigo' }: any) => (
     <div className="bg-white rounded-lg shadow p-6">
@@ -187,6 +255,18 @@ export default function AdminDashboard() {
           icon: <AlertCircle className="h-4 w-4" />
         };
     }
+  };
+
+  const getInquiryTypeLabel = (type: string) => {
+    const types = {
+      'general': 'General Inquiry',
+      'purchase': 'Artwork Purchase',
+      'commission': 'Commission Request',
+      'exhibition': 'Exhibition Inquiry',
+      'studio-visit': 'Studio Visit',
+      'press': 'Press & Media'
+    };
+    return types[type as keyof typeof types] || type;
   };
 
   const FlexibleArtworkUploadModal = () => {
@@ -645,13 +725,14 @@ export default function AdminDashboard() {
               {[
                 { id: 'overview', name: 'Overview', icon: TrendingUp },
                 { id: 'artworks', name: 'Artworks', icon: Package },
+                { id: 'inquiries', name: 'Inquiries', icon: MessageSquare, badge: unreadInquiries },
                 { id: 'orders', name: 'Orders', icon: ShoppingBag },
                 { id: 'users', name: 'Users', icon: Users },
-              ].map(({ id, name, icon: Icon }) => (
+              ].map(({ id, name, icon: Icon, badge }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium ${
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium relative ${
                     activeTab === id
                       ? 'bg-indigo-600 text-white'
                       : 'text-gray-700 hover:bg-gray-100'
@@ -659,6 +740,11 @@ export default function AdminDashboard() {
                 >
                   <Icon className="h-5 w-5" />
                   <span>{name}</span>
+                  {badge && badge > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {badge}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
@@ -667,7 +753,7 @@ export default function AdminDashboard() {
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <StatCard
                   title="Total Revenue"
                   value={`${totalRevenue.toLocaleString()} SEK`}
@@ -687,11 +773,81 @@ export default function AdminDashboard() {
                   color="indigo"
                 />
                 <StatCard
-                  title="Enquire Only"
-                  value={enquireOnlyArtworks}
-                  icon={Mail}
+                  title="Inquiries"
+                  value={totalInquiries}
+                  icon={MessageSquare}
                   color="purple"
                 />
+                <StatCard
+                  title="New Messages"
+                  value={newInquiries}
+                  icon={Mail}
+                  color="red"
+                />
+              </div>
+
+              {/* Recent Inquiries */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Inquiries</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Subject
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inquiries.slice(0, 5).map((inquiry) => (
+                        <tr key={inquiry.id} className={!inquiry.read ? 'bg-blue-50' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {inquiry.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {inquiry.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {inquiry.subject}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {getInquiryTypeLabel(inquiry.inquiryType)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(inquiry.timestamp)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              inquiry.status === 'responded' ? 'bg-green-100 text-green-800' :
+                              inquiry.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {inquiry.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Recent Orders */}
@@ -749,6 +905,124 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Inquiries Tab */}
+          {activeTab === 'inquiries' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Contact Inquiries</h2>
+                <div className="flex space-x-4 text-sm text-gray-600">
+                  <span>Total: {totalInquiries}</span>
+                  <span>Unread: {unreadInquiries}</span>
+                  <span>New: {newInquiries}</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact Info
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Subject & Message
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inquiries.map((inquiry) => (
+                        <tr key={inquiry.id} className={!inquiry.read ? 'bg-blue-50' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="flex items-center">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {inquiry.name}
+                                </div>
+                                {!inquiry.read && (
+                                  <div className="ml-2 w-2 h-2 bg-blue-600 rounded-full"></div>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {inquiry.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="max-w-xs">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {inquiry.subject}
+                              </div>
+                              <div className="text-sm text-gray-500 truncate">
+                                {inquiry.message}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {getInquiryTypeLabel(inquiry.inquiryType)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(inquiry.timestamp)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              inquiry.status === 'responded' ? 'bg-green-100 text-green-800' :
+                              inquiry.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {inquiry.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => openEmailResponse(inquiry)}
+                                className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                                title="Reply via email"
+                              >
+                                <Mail className="h-4 w-4 mr-1" />
+                                Reply
+                              </button>
+                              <select
+                                value={inquiry.status}
+                                onChange={(e) => updateInquiryStatus(inquiry.id, e.target.value as any)}
+                                className="text-xs border rounded px-2 py-1"
+                              >
+                                <option value="new">New</option>
+                                <option value="responded">Responded</option>
+                                <option value="archived">Archived</option>
+                              </select>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {inquiries.length === 0 && (
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No inquiries yet</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import ArtworkCard from '@/components/gallery/ArtworkCard';
-import { Search, Filter, Grid, List, SlidersHorizontal } from 'lucide-react';
+import { X, ZoomIn } from 'lucide-react';
 
 interface Artwork {
   id: string;
@@ -26,13 +27,14 @@ export default function GalleryPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedAvailability, setSelectedAvailability] = useState('');
-  const [priceRange, setPriceRange] = useState<'all' | 'under-10000' | '10000-25000' | 'over-25000'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high' | 'title'>('newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showFilters, setShowFilters] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<Artwork | null>(null);
+  
+  const searchParams = useSearchParams();
+
+  // Get filter and sort parameters from URL
+  const filterType = searchParams.get('type');
+  const sortType = searchParams.get('sort');
+  const category = searchParams.get('category');
 
   // Load artworks from Firebase
   useEffect(() => {
@@ -49,7 +51,6 @@ export default function GalleryPage() {
           ...doc.data()
         })) as Artwork[];
         
-        console.log('Loaded artworks:', artworkData); // Debug log
         setArtworks(artworkData);
         
       } catch (error) {
@@ -63,95 +64,165 @@ export default function GalleryPage() {
     loadArtworks();
   }, []);
 
-  // Get unique categories from artworks
-  const categories = useMemo(() => {
-    const cats = artworks
-      .map(artwork => artwork.category)
-      .filter((category): category is string => Boolean(category));
-    return [...new Set(cats)].sort();
-  }, [artworks]);
-
-  // Filter and sort artworks
+  // Filter and sort artworks based on URL parameters
   const filteredAndSortedArtworks = useMemo(() => {
-    let filtered = artworks.filter((artwork) => {
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = 
-          artwork.title.toLowerCase().includes(searchLower) ||
-          artwork.artist.toLowerCase().includes(searchLower) ||
-          artwork.description?.toLowerCase().includes(searchLower) ||
-          artwork.medium?.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
+    let filtered = [...artworks];
+
+    // Apply type filter
+    if (filterType) {
+      switch (filterType) {
+        case 'for-sale':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'for-sale' || !artwork.availabilityType
+          );
+          break;
+        case 'enquire-only':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'enquire-only'
+          );
+          break;
+        case 'exhibition':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'exhibition'
+          );
+          break;
+        case 'commissioned':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'commissioned'
+          );
+          break;
+        case 'sold':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'sold'
+          );
+          break;
+        case 'paper-prints':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'paper-prints' || artwork.category?.toLowerCase().includes('paper')
+          );
+          break;
+        case 'canvas-prints':
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType === 'canvas-prints' || artwork.category?.toLowerCase().includes('canvas')
+          );
+          break;
       }
+    }
 
-      // Category filter
-      if (selectedCategory && artwork.category !== selectedCategory) {
-        return false;
-      }
+    // Apply category filter
+    if (category) {
+      filtered = filtered.filter(artwork => 
+        artwork.category?.toLowerCase() === category.toLowerCase()
+      );
+    }
 
-      // Availability filter
-      if (selectedAvailability) {
-        const availabilityType = artwork.availabilityType || 'for-sale';
-        if (availabilityType !== selectedAvailability) {
-          return false;
-        }
-      }
-
-      // Price range filter (only for for-sale items with prices)
-      if (priceRange !== 'all' && artwork.availabilityType === 'for-sale' && artwork.price) {
-        switch (priceRange) {
-          case 'under-10000':
-            if (artwork.price >= 10000) return false;
-            break;
-          case '10000-25000':
-            if (artwork.price < 10000 || artwork.price > 25000) return false;
-            break;
-          case 'over-25000':
-            if (artwork.price <= 25000) return false;
-            break;
-        }
-      }
-
-      return true;
-    });
-
-    // Sort filtered results
-    filtered.sort((a, b) => {
-      switch (sortBy) {
+    // Apply sorting
+    if (sortType) {
+      switch (sortType) {
         case 'newest':
-          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+          filtered.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return dateB - dateA;
+          });
+          break;
         case 'oldest':
-          return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+          filtered.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return dateA - dateB;
+          });
+          break;
         case 'price-low':
-          // For price sorting, prioritize for-sale items with prices
-          const aPrice = a.availabilityType === 'for-sale' && a.price ? a.price : Infinity;
-          const bPrice = b.availabilityType === 'for-sale' && b.price ? b.price : Infinity;
-          return aPrice - bPrice;
+          filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+          break;
         case 'price-high':
-          const aPriceHigh = a.availabilityType === 'for-sale' && a.price ? a.price : -1;
-          const bPriceHigh = b.availabilityType === 'for-sale' && b.price ? b.price : -1;
-          return bPriceHigh - aPriceHigh;
+          filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+          break;
         case 'title':
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
+          filtered.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        case 'popular':
+          // For now, sort by creation date (could be enhanced with view tracking)
+          filtered.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return dateB - dateA;
+          });
+          break;
       }
-    });
+    }
 
     return filtered;
-  }, [artworks, searchTerm, selectedCategory, selectedAvailability, priceRange, sortBy]);
+  }, [artworks, filterType, sortType, category]);
+
+  // Get display title based on filters
+  const getDisplayTitle = () => {
+    if (filterType && sortType) {
+      return `${getFilterLabel(filterType)} - ${getSortLabel(sortType)}`;
+    } else if (filterType) {
+      return getFilterLabel(filterType);
+    } else if (sortType) {
+      return getSortLabel(sortType);
+    } else if (category) {
+      return category;
+    }
+    return 'Gallery';
+  };
+
+  const getFilterLabel = (filter: string) => {
+    switch (filter) {
+      case 'for-sale': return 'Original Paintings';
+      case 'enquire-only': return 'Enquire for Price';
+      case 'exhibition': return 'Exhibition Pieces';
+      case 'commissioned': return 'Commissioned Works';
+      case 'sold': return 'Sold Works';
+      case 'paper-prints': return 'Paper Prints';
+      case 'canvas-prints': return 'Canvas Prints';
+      default: return filter;
+    }
+  };
+
+  const getSortLabel = (sort: string) => {
+    switch (sort) {
+      case 'newest': return 'Latest Works';
+      case 'oldest': return 'Earlier Works';
+      case 'popular': return 'Popular Pieces';
+      case 'price-low': return 'Price: Low to High';
+      case 'price-high': return 'Price: High to Low';
+      case 'title': return 'Alphabetical';
+      default: return sort;
+    }
+  };
+
+  // Close zoom modal on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomedImage(null);
+      }
+    };
+
+    if (zoomedImage) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [zoomedImage]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-blue-50 to-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-              <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2">Loading Artworks...</h2>
-              <p className="text-gray-600">Discovering beautiful pieces for you</p>
-            </div>
+      <div className="min-h-screen bg-white">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 font-serif">Loading artworks...</p>
           </div>
         </div>
       </div>
@@ -160,19 +231,17 @@ export default function GalleryPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-blue-50 to-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-4">Unable to Load Gallery</h2>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+      <div className="min-h-screen bg-white">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center max-w-md mx-auto px-6">
+            <h2 className="text-2xl font-serif font-light text-gray-900 mb-4">Unable to Load Gallery</h2>
+            <p className="text-gray-600 font-serif mb-8">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-gray-900 text-white px-8 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -180,187 +249,142 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-blue-50 to-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-            Gallery
-          </h1>
-          <p className="text-xl text-gray-600 font-serif max-w-2xl mx-auto">
-            Explore the artistic journey of Aja Eriksson von Weissenberg - from vibrant Nordic landscapes to contemplative abstract works
-          </p>
-          <div className="mt-4 text-sm text-gray-500">
-            {artworks.length} artworks • {filteredAndSortedArtworks.length} showing
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          {/* Search Bar */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search artworks, techniques, or themes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
-            />
-          </div>
-
-          {/* Filter Toggle */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg hover:bg-white transition-colors"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span>Filters</span>
-            </button>
-          </div>
-
-          {/* Filters */}
-          {showFilters && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Category Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Availability Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
-                  <select
-                    value={selectedAvailability}
-                    onChange={(e) => setSelectedAvailability(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
-                  >
-                    <option value="">All Artworks</option>
-                    <option value="for-sale">For Sale</option>
-                    <option value="enquire-only">Contact for Price</option>
-                    <option value="exhibition">Exhibition</option>
-                    <option value="commissioned">Commissioned</option>
-                    <option value="sold">Sold</option>
-                  </select>
-                </div>
-
-                {/* Price Range Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
-                  <select
-                    value={priceRange}
-                    onChange={(e) => setPriceRange(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
-                  >
-                    <option value="all">All Prices</option>
-                    <option value="under-10000">Under 10,000 SEK</option>
-                    <option value="10000-25000">10,000 - 25,000 SEK</option>
-                    <option value="over-25000">Over 25,000 SEK</option>
-                  </select>
-                </div>
-
-                {/* Sort By */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="title">Title A-Z</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                  </select>
-                </div>
+    <>
+      <div className="min-h-screen bg-white">
+        {/* Header with Filter Info */}
+        <section className="pt-12 pb-8 border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-3xl font-serif font-light text-gray-900">
+                  {getDisplayTitle()}
+                </h1>
+                {(filterType || sortType || category) && (
+                  <p className="text-gray-600 font-serif mt-2">
+                    {filteredAndSortedArtworks.length} {filteredAndSortedArtworks.length === 1 ? 'artwork' : 'artworks'}
+                  </p>
+                )}
               </div>
-
+              
               {/* Clear Filters */}
-              <div className="mt-4 flex justify-center">
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('');
-                    setSelectedAvailability('');
-                    setPriceRange('all');
-                    setSortBy('newest');
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-800 underline"
+              {(filterType || sortType || category) && (
+                <a
+                  href="/gallery"
+                  className="text-gray-600 hover:text-gray-900 font-serif text-sm transition-colors mt-4 sm:mt-0"
                 >
-                  Clear All Filters
-                </button>
-              </div>
+                  View All Artworks
+                </a>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-sm text-gray-600">
-            {filteredAndSortedArtworks.length} {filteredAndSortedArtworks.length === 1 ? 'artwork' : 'artworks'}
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <Grid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <List className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        </section>
 
         {/* Artworks Grid */}
-        {filteredAndSortedArtworks.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-gray-500 mb-4">
-              <Filter className="h-16 w-16 mx-auto mb-4" />
-            </div>
-            <h3 className="text-xl font-serif font-semibold text-gray-900 mb-2">No artworks found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your search criteria or filters</p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('');
-                setSelectedAvailability('');
-                setPriceRange('all');
-              }}
-              className="text-yellow-600 hover:text-yellow-700 font-medium"
-            >
-              Clear all filters
-            </button>
+        <section className="py-12">
+          <div className="max-w-6xl mx-auto px-6">
+            {filteredAndSortedArtworks.length === 0 ? (
+              <div className="text-center py-16">
+                {artworks.length === 0 ? (
+                  <>
+                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">Gallery Coming Soon</h3>
+                    <p className="text-gray-600 font-serif">New artworks are being prepared for display</p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">No Artworks Found</h3>
+                    <p className="text-gray-600 font-serif mb-6">
+                      No artworks match your current filter criteria.
+                    </p>
+                    <a
+                      href="/gallery"
+                      className="bg-gray-900 text-white px-6 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      View All Artworks
+                    </a>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredAndSortedArtworks.map((artwork) => (
+                  <div key={artwork.id} className="group">
+                    <div className="relative">
+                      <ArtworkCard artwork={artwork} />
+                      
+                      {/* Zoom Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setZoomedImage(artwork);
+                        }}
+                        className="absolute top-3 right-3 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
+                        title="View larger image"
+                      >
+                        <ZoomIn className="h-4 w-4 text-gray-900" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className={`grid gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-              : 'grid-cols-1 max-w-4xl mx-auto'
-          }`}>
-            {filteredAndSortedArtworks.map((artwork) => (
-              <ArtworkCard key={artwork.id} artwork={artwork} />
-            ))}
-          </div>
-        )}
+        </section>
       </div>
-    </div>
+
+      {/* Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4"
+          onClick={() => setZoomedImage(null)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors z-10"
+          >
+            <X className="h-8 w-8" />
+          </button>
+
+          {/* Zoomed Image */}
+          <div 
+            className="relative max-w-5xl max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={zoomedImage.imageUrl}
+              alt={zoomedImage.title}
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+            
+            {/* Image Info */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">
+              <div className="text-white">
+                <h3 className="text-xl font-serif font-medium mb-1">
+                  {zoomedImage.title}
+                </h3>
+                {zoomedImage.year && (
+                  <p className="text-gray-300 font-serif text-sm mb-2">
+                    {zoomedImage.year}
+                  </p>
+                )}
+                {zoomedImage.medium && zoomedImage.dimensions && (
+                  <p className="text-gray-300 font-serif text-sm">
+                    {zoomedImage.medium} • {zoomedImage.dimensions}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+            <p className="text-white text-sm font-serif opacity-75">
+              Click outside image or press ESC to close
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
