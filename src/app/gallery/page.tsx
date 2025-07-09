@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -23,18 +23,18 @@ interface Artwork {
   createdAt?: any;
 }
 
-export default function GalleryPage() {
+function GalleryContent() {
+  // State declarations
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<Artwork | null>(null);
   
+  // Get search parameters
   const searchParams = useSearchParams();
-
-  // Get filter and sort parameters from URL
-  const filterType = searchParams.get('type');
-  const sortType = searchParams.get('sort');
-  const category = searchParams.get('category');
+  const filterType: string | null = searchParams ? searchParams.get('type') : null;
+  const sortType: string | null = searchParams ? searchParams.get('sort') : null;
+  const category: string | null = searchParams ? searchParams.get('category') : null;
 
   // Load artworks from Firebase
   useEffect(() => {
@@ -123,14 +123,14 @@ export default function GalleryPage() {
           filtered.sort((a, b) => {
             const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
             const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-            return dateB - dateA;
+            return dateB.getTime() - dateA.getTime();
           });
           break;
         case 'oldest':
           filtered.sort((a, b) => {
             const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
             const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-            return dateA - dateB;
+            return dateA.getTime() - dateB.getTime();
           });
           break;
         case 'price-low':
@@ -147,7 +147,7 @@ export default function GalleryPage() {
           filtered.sort((a, b) => {
             const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
             const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-            return dateB - dateA;
+            return dateB.getTime() - dateA.getTime();
           });
           break;
       }
@@ -386,5 +386,27 @@ export default function GalleryPage() {
         </div>
       )}
     </>
+  );
+}
+
+// Loading component for Suspense
+function GalleryLoading() {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="flex items-center justify-center py-32">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-serif">Loading gallery...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={<GalleryLoading />}>
+      <GalleryContent />
+    </Suspense>
   );
 }
