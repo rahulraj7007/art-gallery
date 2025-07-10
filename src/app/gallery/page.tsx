@@ -221,7 +221,7 @@ function GalleryContent() {
       <div className="min-h-screen bg-white">
         <div className="flex items-center justify-center py-32">
           <div className="text-center">
-            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-red-900 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600 font-serif">Loading artworks...</p>
           </div>
         </div>
@@ -238,7 +238,7 @@ function GalleryContent() {
             <p className="text-gray-600 font-serif mb-8">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="bg-gray-900 text-white px-8 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
+              className="bg-red-900 text-white px-8 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
             >
               Try Again
             </button>
@@ -253,7 +253,7 @@ function GalleryContent() {
       <div className="min-h-screen bg-white">
         {/* Header with Filter Info */}
         <section className="pt-12 pb-8 border-b border-gray-100">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-[1400px] mx-auto px-6">{/* Smaller: reduced from 1600px to 1400px */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-3xl font-serif font-light text-gray-900">
@@ -280,10 +280,10 @@ function GalleryContent() {
         </section>
 
         {/* Artworks Grid */}
-        <section className="py-12">
-          <div className="max-w-6xl mx-auto px-6">
+        <section className="py-24">{/* Increased from py-16 to py-24 for more space before/after images */}
+          <div className="max-w-[1400px] mx-auto px-6">{/* Smaller: reduced from 1600px to 1400px */}
             {filteredAndSortedArtworks.length === 0 ? (
-              <div className="text-center py-16">
+              <div className="text-center py-24">{/* Increased from py-16 to py-24 to match section spacing */}
                 {artworks.length === 0 ? (
                   <>
                     <h3 className="text-xl font-serif font-light text-gray-900 mb-4">Gallery Coming Soon</h3>
@@ -297,7 +297,7 @@ function GalleryContent() {
                     </p>
                     <a
                       href="/gallery"
-                      className="bg-gray-900 text-white px-6 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
+                      className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
                     >
                       View All Artworks
                     </a>
@@ -305,7 +305,7 @@ function GalleryContent() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{/* Reduced gap from 10 to 8 for more compact feel */}
                 {filteredAndSortedArtworks.map((artwork) => (
                   <div key={artwork.id} className="group">
                     <div className="relative">
@@ -318,10 +318,10 @@ function GalleryContent() {
                           e.stopPropagation();
                           setZoomedImage(artwork);
                         }}
-                        className="absolute top-3 right-3 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
+                        className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
                         title="View larger image"
                       >
-                        <ZoomIn className="h-4 w-4 text-gray-900" />
+                        <ZoomIn className="h-5 w-5 text-gray-900" />
                       </button>
                     </div>
                   </div>
@@ -335,7 +335,7 @@ function GalleryContent() {
       {/* Zoom Modal */}
       {zoomedImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-3"
           onClick={() => setZoomedImage(null)}
         >
           {/* Close Button */}
@@ -348,7 +348,7 @@ function GalleryContent() {
 
           {/* Zoomed Image */}
           <div 
-            className="relative max-w-5xl max-h-full"
+            className="relative max-w-6xl max-h-full"
             onClick={(e) => e.stopPropagation()}
           >
             <img
@@ -395,7 +395,7 @@ function GalleryLoading() {
     <div className="min-h-screen bg-white">
       <div className="flex items-center justify-center py-32">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-red-900 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-serif">Loading gallery...</p>
         </div>
       </div>
