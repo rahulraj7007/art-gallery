@@ -1,4 +1,5 @@
-// src/app/admin/page.tsx
+// src/app/admin/page.tsx - Fixed version with no duplicate declarations
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,7 +26,8 @@ import {
   Save,
   MessageSquare,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Tag
 } from 'lucide-react';
 
 interface Artwork {
@@ -39,6 +41,8 @@ interface Artwork {
   dimensions?: string;
   inStock?: boolean;
   category?: string;
+  collection?: string;
+  tags?: string[];
   year?: number;
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
   createdAt: any;
@@ -67,6 +71,20 @@ interface Inquiry {
   read: boolean;
 }
 
+// Shared predefined tags constant
+const PREDEFINED_TAGS = [
+  'Popular',
+  'Best Seller',
+  'Featured',
+  'New',
+  'Limited Edition',
+  'Award Winner',
+  'Exhibition Piece',
+  'Signature Work',
+  'Sold Out',
+  'Coming Soon'
+];
+
 export default function AdminDashboard() {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -75,6 +93,10 @@ export default function AdminDashboard() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddArtworkModal, setShowAddArtworkModal] = useState(false);
+  const [showEditArtworkModal, setShowEditArtworkModal] = useState(false);
+  const [editingArtwork, setEditingArtwork] = useState<Artwork | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingArtwork, setDeletingArtwork] = useState<Artwork | null>(null);
 
   // Utility function to format dates consistently
   const formatDate = (dateValue: any) => {
@@ -193,6 +215,48 @@ export default function AdminDashboard() {
     markInquiryAsRead(inquiry.id);
   };
 
+  // Artwork management functions
+  const handleEditArtwork = (artwork: Artwork) => {
+    setEditingArtwork(artwork);
+    setShowEditArtworkModal(true);
+  };
+
+  const handleDeleteArtwork = (artwork: Artwork) => {
+    setDeletingArtwork(artwork);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteArtwork = async () => {
+    if (!deletingArtwork) return;
+
+    try {
+      await deleteDoc(doc(db, 'artworks', deletingArtwork.id));
+      setShowDeleteConfirm(false);
+      setDeletingArtwork(null);
+      loadArtworks();
+      alert('Artwork deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting artwork:', error);
+      alert('Error deleting artwork. Please try again.');
+    }
+  };
+
+  const updateArtwork = async (artworkId: string, updatedData: any) => {
+    try {
+      await updateDoc(doc(db, 'artworks', artworkId), {
+        ...updatedData,
+        updatedAt: new Date()
+      });
+      loadArtworks();
+      setShowEditArtworkModal(false);
+      setEditingArtwork(null);
+      alert('Artwork updated successfully!');
+    } catch (error) {
+      console.error('Error updating artwork:', error);
+      alert('Error updating artwork. Please try again.');
+    }
+  };
+
   // Stats calculations
   const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
   const totalOrders = orders.length;
@@ -269,24 +333,38 @@ export default function AdminDashboard() {
     return types[type as keyof typeof types] || type;
   };
 
+  // Get existing collections from artworks for autocomplete suggestions
+  const getExistingCollections = (): string[] => {
+    const collections = artworks
+      .map(artwork => artwork.collection)
+      .filter((collection): collection is string => Boolean(collection))
+      .filter((collection, index, self) => self.indexOf(collection) === index)
+      .sort();
+    return collections;
+  };
+
   const FlexibleArtworkUploadModal = () => {
     const [formData, setFormData] = useState({
       title: '',
       artist: 'Aja Eriksson von Weissenberg',
+      collection: '',
       description: '',
-      medium: '',
+      medium: 'Oil on Canvas',
       dimensions: '',
       category: '',
       year: new Date().getFullYear(),
-      availabilityType: 'for-sale' as 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold',
+      availabilityType: 'enquire-only' as 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold',
       price: '',
       inStock: true,
     });
 
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [customTag, setCustomTag] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showCollectionSuggestions, setShowCollectionSuggestions] = useState(false);
 
     const categories = [
       'Abstract',
@@ -319,6 +397,30 @@ export default function AdminDashboard() {
       { value: 'sold', label: 'Sold', description: 'Already sold, display only' }
     ];
 
+    // Collection suggestions
+    const existingCollections = getExistingCollections();
+    const filteredCollections = existingCollections.filter(collection =>
+      collection.toLowerCase().includes(formData.collection.toLowerCase())
+    );
+
+    // Tag management functions
+    const addTag = (tag: string) => {
+      if (tag && !selectedTags.includes(tag)) {
+        setSelectedTags([...selectedTags, tag]);
+      }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+      setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+    };
+
+    const addCustomTag = () => {
+      if (customTag.trim()) {
+        addTag(customTag.trim());
+        setCustomTag('');
+      }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
       setFormData(prev => ({
@@ -330,6 +432,16 @@ export default function AdminDashboard() {
       if (errors[name]) {
         setErrors(prev => ({ ...prev, [name]: '' }));
       }
+
+      // Show collection suggestions when typing
+      if (name === 'collection') {
+        setShowCollectionSuggestions(value.length > 0);
+      }
+    };
+
+    const handleCollectionSelect = (collection: string) => {
+      setFormData(prev => ({ ...prev, collection }));
+      setShowCollectionSuggestions(false);
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -388,10 +500,12 @@ export default function AdminDashboard() {
         const artworkData = {
           title: formData.title.trim(),
           artist: formData.artist.trim(),
+          collection: formData.collection.trim() || '',
           description: formData.description.trim() || '',
           medium: formData.medium.trim() || '',
           dimensions: formData.dimensions.trim() || '',
           category: formData.category || '',
+          tags: selectedTags,
           year: formData.year,
           availabilityType: formData.availabilityType,
           imageUrl,
@@ -411,18 +525,22 @@ export default function AdminDashboard() {
         setFormData({
           title: '',
           artist: 'Aja Eriksson von Weissenberg',
+          collection: '',
           description: '',
-          medium: '',
+          medium: 'Oil on Canvas',
           dimensions: '',
           category: '',
           year: new Date().getFullYear(),
-          availabilityType: 'for-sale',
+          availabilityType: 'enquire-only',
           price: '',
           inStock: true,
         });
         setImageFile(null);
         setImagePreview(null);
+        setSelectedTags([]);
+        setCustomTag('');
         setErrors({});
+        setShowCollectionSuggestions(false);
 
         setShowAddArtworkModal(false);
         loadArtworks();
@@ -549,6 +667,117 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Collection Field */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="h-4 w-4 inline mr-1" />
+                Collection Name
+              </label>
+              <input
+                type="text"
+                name="collection"
+                value={formData.collection}
+                onChange={handleInputChange}
+                onFocus={() => setShowCollectionSuggestions(formData.collection.length > 0)}
+                onBlur={() => setTimeout(() => setShowCollectionSuggestions(false), 200)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="e.g., Nordic Landscapes, Abstract Series, Ocean Moods"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Group artworks into collections (optional). Start typing to see existing collections.
+              </p>
+              
+              {/* Collection Suggestions */}
+              {showCollectionSuggestions && filteredCollections.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {filteredCollections.map((collection, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onMouseDown={() => handleCollectionSelect(collection)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center"
+                    >
+                      <Tag className="h-3 w-3 mr-2 text-gray-400" />
+                      {collection}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tags Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="h-4 w-4 inline mr-1" />
+                Tags
+              </label>
+              
+              {/* Selected Tags Display */}
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedTags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-indigo-100 text-indigo-800"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 text-indigo-600 hover:text-indigo-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Predefined Tags */}
+              <div className="mb-3">
+                <p className="text-xs text-gray-600 mb-2">Quick select tags:</p>
+                <div className="flex flex-wrap gap-2">
+                  {PREDEFINED_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      disabled={selectedTags.includes(tag)}
+                      className={`px-3 py-1 text-sm rounded border transition-colors ${
+                        selectedTags.includes(tag)
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-300'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Tag Input */}
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={customTag}
+                  onChange={(e) => setCustomTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTag())}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  placeholder="Add custom tag..."
+                />
+                <button
+                  type="button"
+                  onClick={addCustomTag}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Tags help categorize and highlight special artworks (optional)
+              </p>
+            </div>
+
             {/* Price (conditional) */}
             {formData.availabilityType === 'for-sale' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -612,7 +841,6 @@ export default function AdminDashboard() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <option value="">Select medium</option>
                   {mediums.map(medium => (
                     <option key={medium} value={medium}>{medium}</option>
                   ))}
@@ -690,6 +918,537 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setShowAddArtworkModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  const EditArtworkModal = ({ artwork, onUpdate, onClose }: { 
+    artwork: Artwork; 
+    onUpdate: (id: string, data: any) => void; 
+    onClose: () => void; 
+  }) => {
+    const [formData, setFormData] = useState({
+      title: artwork.title || '',
+      artist: artwork.artist || '',
+      collection: artwork.collection || '',
+      description: artwork.description || '',
+      medium: artwork.medium || '',
+      dimensions: artwork.dimensions || '',
+      category: artwork.category || '',
+      year: artwork.year || new Date().getFullYear(),
+      availabilityType: artwork.availabilityType || 'for-sale',
+      price: artwork.price ? artwork.price.toString() : '',
+      inStock: artwork.inStock ?? true,
+    });
+
+    const [selectedTags, setSelectedTags] = useState<string[]>(artwork.tags || []);
+    const [customTag, setCustomTag] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(artwork.imageUrl);
+    const [updating, setUpdating] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showCollectionSuggestions, setShowCollectionSuggestions] = useState(false);
+
+    const categories = [
+      'Abstract',
+      'Landscape', 
+      'Still Life',
+      'Portrait',
+      'Nordic Scenes',
+      'Mixed Media',
+      'Commissioned Work',
+      'Exhibition Piece'
+    ];
+
+    const mediums = [
+      'Oil on Canvas',
+      'Oil on Board',
+      'Oil on Linen',
+      'Acrylic on Canvas',
+      'Mixed Media',
+      'Watercolor',
+      'Oil and Sand on Canvas',
+      'Charcoal and Oil',
+      'Other'
+    ];
+
+    const availabilityTypes = [
+      { value: 'for-sale', label: 'For Sale', description: 'Regular sale with price' },
+      { value: 'enquire-only', label: 'Enquire for Price', description: 'Contact for pricing information' },
+      { value: 'exhibition', label: 'Exhibition Only', description: 'Display only, not for sale' },
+      { value: 'commissioned', label: 'Commissioned Work', description: 'Custom commission piece' },
+      { value: 'sold', label: 'Sold', description: 'Already sold, display only' }
+    ];
+
+    // Collection suggestions
+    const existingCollections = getExistingCollections();
+    const filteredCollections = existingCollections.filter(collection =>
+      collection.toLowerCase().includes(formData.collection.toLowerCase())
+    );
+
+    // Tag management functions for edit modal
+    const addTag = (tag: string) => {
+      if (tag && !selectedTags.includes(tag)) {
+        setSelectedTags([...selectedTags, tag]);
+      }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+      setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+    };
+
+    const addCustomTag = () => {
+      if (customTag.trim()) {
+        addTag(customTag.trim());
+        setCustomTag('');
+      }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name, value, type } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      }));
+
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+      }
+
+      if (name === 'collection') {
+        setShowCollectionSuggestions(value.length > 0);
+      }
+    };
+
+    const handleCollectionSelect = (collection: string) => {
+      setFormData(prev => ({ ...prev, collection }));
+      setShowCollectionSuggestions(false);
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => setImagePreview(e.target?.result as string);
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const validateForm = () => {
+      const newErrors: Record<string, string> = {};
+
+      if (!formData.title.trim()) newErrors.title = 'Title is required';
+      if (!formData.artist.trim()) newErrors.artist = 'Artist is required';
+
+      if (formData.availabilityType === 'for-sale' && !formData.price) {
+        newErrors.price = 'Price is required for items marked "For Sale"';
+      }
+
+      const currentYear = new Date().getFullYear();
+      if (formData.year < 1800 || formData.year > currentYear + 1) {
+        newErrors.year = `Year must be between 1800 and ${currentYear + 1}`;
+      }
+
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      setUpdating(true);
+
+      try {
+        let imageUrl = artwork.imageUrl;
+
+        // Upload new image if provided
+        if (imageFile) {
+          const imageRef = ref(storage, `artworks/${Date.now()}_${imageFile.name}`);
+          const uploadResult = await uploadBytes(imageRef, imageFile);
+          imageUrl = await getDownloadURL(uploadResult.ref);
+        }
+
+        // Prepare updated artwork data
+        const artworkData = {
+          title: formData.title.trim(),
+          artist: formData.artist.trim(),
+          collection: formData.collection.trim() || '',
+          description: formData.description.trim() || '',
+          medium: formData.medium.trim() || '',
+          dimensions: formData.dimensions.trim() || '',
+          category: formData.category || '',
+          tags: selectedTags,
+          year: formData.year,
+          availabilityType: formData.availabilityType,
+          imageUrl,
+          // Only include price for 'for-sale' items
+          ...(formData.availabilityType === 'for-sale' && formData.price && {
+            price: parseFloat(formData.price),
+            inStock: formData.inStock
+          })
+        };
+
+        // Update artwork
+        onUpdate(artwork.id, artworkData);
+
+      } catch (error) {
+        console.error('Error updating artwork:', error);
+        alert('Error updating artwork. Please try again.');
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    const selectedAvailability = availabilityTypes.find(type => type.value === formData.availabilityType);
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h3 className="text-xl font-serif font-bold text-gray-900 mb-6">Edit Artwork</h3>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Current/New Image */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Artwork Image
+              </label>
+              <div className="space-y-4">
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Current artwork"
+                    className="max-h-48 mx-auto rounded-lg shadow-md"
+                  />
+                )}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition-colors">
+                  <label htmlFor="edit-image-upload" className="cursor-pointer">
+                    <span className="text-indigo-600 font-medium hover:text-indigo-500">
+                      {imageFile ? 'Change image' : 'Upload new image'}
+                    </span>
+                    <span className="text-gray-500"> (optional)</span>
+                  </label>
+                  <input
+                    id="edit-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Availability Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Availability Type *
+              </label>
+              <select
+                name="availabilityType"
+                value={formData.availabilityType}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {availabilityTypes.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+              {selectedAvailability && (
+                <p className="text-sm text-gray-600 mt-1 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {selectedAvailability.description}
+                </p>
+              )}
+            </div>
+
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                {errors.title && <p className="text-red-600 text-sm mt-1">{errors.title}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Artist *
+                </label>
+                <input
+                  type="text"
+                  name="artist"
+                  value={formData.artist}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                {errors.artist && <p className="text-red-600 text-sm mt-1">{errors.artist}</p>}
+              </div>
+            </div>
+
+            {/* Collection Field */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="h-4 w-4 inline mr-1" />
+                Collection Name
+              </label>
+              <input
+                type="text"
+                name="collection"
+                value={formData.collection}
+                onChange={handleInputChange}
+                onFocus={() => setShowCollectionSuggestions(formData.collection.length > 0)}
+                onBlur={() => setTimeout(() => setShowCollectionSuggestions(false), 200)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="e.g., Nordic Landscapes, Abstract Series"
+              />
+              
+              {/* Collection Suggestions */}
+              {showCollectionSuggestions && filteredCollections.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {filteredCollections.map((collection, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onMouseDown={() => handleCollectionSelect(collection)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center"
+                    >
+                      <Tag className="h-3 w-3 mr-2 text-gray-400" />
+                      {collection}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tags Section in Edit Modal */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="h-4 w-4 inline mr-1" />
+                Tags
+              </label>
+              
+              {/* Selected Tags Display */}
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedTags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-indigo-100 text-indigo-800"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 text-indigo-600 hover:text-indigo-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Predefined Tags */}
+              <div className="mb-3">
+                <p className="text-xs text-gray-600 mb-2">Quick select tags:</p>
+                <div className="flex flex-wrap gap-2">
+                  {PREDEFINED_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      disabled={selectedTags.includes(tag)}
+                      className={`px-3 py-1 text-sm rounded border transition-colors ${
+                        selectedTags.includes(tag)
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-300'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Tag Input */}
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={customTag}
+                  onChange={(e) => setCustomTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTag())}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  placeholder="Add custom tag..."
+                />
+                <button
+                  type="button"
+                  onClick={addCustomTag}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Price (conditional) */}
+            {formData.availabilityType === 'for-sale' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price (SEK) *
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    min="0"
+                    step="100"
+                  />
+                  {errors.price && <p className="text-red-600 text-sm mt-1">{errors.price}</p>}
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="inStock"
+                    checked={formData.inStock}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Available for purchase
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            {/* Technical Details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Medium
+                </label>
+                <select
+                  name="medium"
+                  value={formData.medium}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Select medium</option>
+                  {mediums.map(medium => (
+                    <option key={medium} value={medium}>{medium}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dimensions
+                </label>
+                <input
+                  type="text"
+                  name="dimensions"
+                  value={formData.dimensions}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="e.g., 120 x 90 cm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Year
+                </label>
+                <input
+                  type="number"
+                  name="year"
+                  value={formData.year}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  min="1800"
+                  max={new Date().getFullYear() + 1}
+                />
+                {errors.year && <p className="text-red-600 text-sm mt-1">{errors.year}</p>}
+              </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select category</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                disabled={updating}
+                className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {updating ? (
+                  <>
+                    <Upload className="h-5 w-5 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5 mr-2" />
+                    Update Artwork
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
                 className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-400"
               >
                 Cancel
@@ -1055,6 +1814,28 @@ export default function AdminDashboard() {
                         <h3 className="font-semibold text-lg text-gray-900">{artwork.title}</h3>
                         <p className="text-gray-600">by {artwork.artist}</p>
                         
+                        {/* Collection Display */}
+                        {artwork.collection && (
+                          <div className="mt-1 flex items-center text-xs text-gray-600">
+                            <Tag className="h-3 w-3 mr-1" />
+                            <span className="italic">{artwork.collection}</span>
+                          </div>
+                        )}
+
+                        {/* Tags Display */}
+                        {artwork.tags && artwork.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {artwork.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-700 font-medium"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        
                         <div className="mt-2">
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${availabilityInfo.color}`}>
                             {availabilityInfo.icon}
@@ -1071,10 +1852,18 @@ export default function AdminDashboard() {
                             {formatDate(artwork.createdAt)}
                           </span>
                           <div className="flex space-x-2">
-                            <button className="p-2 text-gray-600 hover:text-indigo-600">
+                            <button 
+                              onClick={() => handleEditArtwork(artwork)}
+                              className="p-2 text-gray-600 hover:text-indigo-600 transition-colors"
+                              title="Edit artwork"
+                            >
                               <Edit className="h-4 w-4" />
                             </button>
-                            <button className="p-2 text-gray-600 hover:text-red-600">
+                            <button 
+                              onClick={() => handleDeleteArtwork(artwork)}
+                              className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                              title="Delete artwork"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -1175,6 +1964,59 @@ export default function AdminDashboard() {
 
         {/* Add Artwork Modal */}
         {showAddArtworkModal && <FlexibleArtworkUploadModal />}
+
+        {/* Edit Artwork Modal */}
+        {showEditArtworkModal && editingArtwork && (
+          <EditArtworkModal 
+            artwork={editingArtwork} 
+            onUpdate={updateArtwork}
+            onClose={() => {
+              setShowEditArtworkModal(false);
+              setEditingArtwork(null);
+            }}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && deletingArtwork && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-serif font-bold text-gray-900 mb-4">
+                Delete Artwork
+              </h3>
+              <div className="mb-6">
+                <img
+                  src={deletingArtwork.imageUrl}
+                  alt={deletingArtwork.title}
+                  className="w-full h-32 object-cover rounded mb-3"
+                />
+                <p className="text-gray-700">
+                  Are you sure you want to delete <strong>"{deletingArtwork.title}"</strong> by {deletingArtwork.artist}?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={confirmDeleteArtwork}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Delete Artwork
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingArtwork(null);
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );

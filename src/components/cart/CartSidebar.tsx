@@ -1,11 +1,20 @@
+// Enhanced src/components/cart/CartSidebar.tsx (Your exact structure with animations added)
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/lib/store/cartStore';
-import { X, Plus, Minus, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, ArrowRight, Trash2, Loader2 } from 'lucide-react';
 
 export default function CartSidebar() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  
+  // NEW: Animation states
+  const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
+  const [removingItem, setRemovingItem] = useState<string | null>(null);
+
   const {
     items,
     isOpen,
@@ -15,7 +24,33 @@ export default function CartSidebar() {
     clearCart,
     getTotalItems,
     getTotalPrice,
+    // NEW: Enhanced states
+    lastAddedItem,
+    clearLastAdded,
   } = useCartStore();
+
+  // NEW: Highlight newly added items
+  useEffect(() => {
+    if (lastAddedItem) {
+      setHighlightedItem(lastAddedItem);
+      
+      // Auto-scroll to newly added item
+      setTimeout(() => {
+        const element = document.getElementById(`cart-item-${lastAddedItem}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+
+      // Remove highlight after animation
+      const timer = setTimeout(() => {
+        setHighlightedItem(null);
+        clearLastAdded();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [lastAddedItem, clearLastAdded]);
 
   // Close cart on escape key
   useEffect(() => {
@@ -37,24 +72,56 @@ export default function CartSidebar() {
     };
   }, [isOpen, closeCart]);
 
-  const handleCheckout = () => {
-    // Create Stripe checkout session
-    fetch('/api/checkout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ items }),
-    })
-    .then(res => res.json())
-    .then(data => {
+  // Enhanced remove item with animation
+  const handleRemoveItem = async (artworkId: string) => {
+    setRemovingItem(artworkId);
+    
+    // Add removal animation delay
+    setTimeout(() => {
+      removeItem(artworkId);
+      setRemovingItem(null);
+    }, 300);
+  };
+
+  const handleCheckout = async () => {
+    setIsLoading(true);
+    setCheckoutError(null);
+
+    try {
+      // Get customer email if user is logged in (you might want to get this from your auth context)
+      const customerEmail = null; // Replace with actual user email if available
+
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          items,
+          customerEmail 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('No checkout URL received');
       }
-    })
-    .catch(error => {
+    } catch (error) {
       console.error('Checkout error:', error);
-    });
+      setCheckoutError(error instanceof Error ? error.message : 'Checkout failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -100,7 +167,7 @@ export default function CartSidebar() {
                 <Link
                   href="/gallery"
                   onClick={closeCart}
-                  className="bg-gray-900 text-white px-6 py-3 font-serif font-medium hover:bg-gray-800 transition-colors"
+                  className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors rounded-lg"
                 >
                   Browse Gallery
                 </Link>
@@ -110,81 +177,99 @@ export default function CartSidebar() {
                 {items.map((item) => (
                   <div
                     key={item.artwork.id}
-                    className="flex space-x-4"
+                    id={`cart-item-${item.artwork.id}`}
+                    className={`transition-all duration-500 p-4 rounded-lg ${
+                      highlightedItem === item.artwork.id
+                        ? 'border-2 border-green-500 bg-green-50 shadow-md scale-[1.02]'
+                        : removingItem === item.artwork.id
+                        ? 'border border-red-300 bg-red-50 opacity-50 scale-95'
+                        : 'border border-gray-100 bg-white hover:border-gray-200'
+                    }`}
                   >
-                    {/* Artwork Image - Using img tag to avoid external hostname error */}
-                    <Link
-                      href={`/artwork/${item.artwork.id}`}
-                      onClick={closeCart}
-                      className="flex-shrink-0"
-                    >
-                      <img
-                        src={item.artwork.imageUrl}
-                        alt={item.artwork.title}
-                        className="w-20 h-25 object-cover hover:opacity-75 transition-opacity"
-                        onError={(e) => {
-                          // Fallback for broken images
-                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
-                        }}
-                      />
-                    </Link>
+                    <div className="flex space-x-4 relative">
+                      {/* NEW: New Item Badge */}
+                      {highlightedItem === item.artwork.id && (
+                        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-serif animate-pulse z-10">
+                          New!
+                        </div>
+                      )}
 
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0">
+                      {/* Artwork Image */}
                       <Link
                         href={`/artwork/${item.artwork.id}`}
                         onClick={closeCart}
-                        className="block"
+                        className="flex-shrink-0"
                       >
-                        <h3 className="text-sm font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors">
-                          {item.artwork.title}
-                        </h3>
-                        <p className="text-sm text-gray-500 font-serif">
-                          by {item.artwork.artist}
-                        </p>
+                        <img
+                          src={item.artwork.imageUrl}
+                          alt={item.artwork.title}
+                          className="w-20 h-25 object-cover hover:opacity-75 transition-opacity rounded"
+                          onError={(e) => {
+                            // Fallback for broken images
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
+                          }}
+                        />
                       </Link>
 
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="text-sm font-serif font-medium text-gray-900">
-                          {item.artwork.price?.toLocaleString()} SEK
-                        </div>
-
-                        {/* Quantity Controls */}
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => updateQuantity(item.artwork.id, item.quantity - 1)}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          
-                          <span className="w-8 text-center text-sm font-serif font-medium">
-                            {item.quantity}
-                          </span>
-                          
-                          <button
-                            onClick={() => updateQuantity(item.artwork.id, item.quantity + 1)}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Subtotal and Remove */}
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="text-sm font-serif font-medium text-gray-900">
-                          Subtotal: {((item.artwork.price || 0) * item.quantity).toLocaleString()} SEK
-                        </div>
-                        
-                        <button
-                          onClick={() => removeItem(item.artwork.id)}
-                          className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                          title="Remove item"
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={`/artwork/${item.artwork.id}`}
+                          onClick={closeCart}
+                          className="block"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          <h3 className="text-sm font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors">
+                            {item.artwork.title}
+                          </h3>
+                          <p className="text-sm text-gray-500 font-serif">
+                            by {item.artwork.artist}
+                          </p>
+                        </Link>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="text-sm font-serif font-medium text-gray-900">
+                            {(item.artwork.price || 0).toLocaleString()} SEK
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => updateQuantity(item.artwork.id, item.quantity - 1)}
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                              disabled={item.quantity <= 1 || removingItem === item.artwork.id}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            
+                            <span className="w-8 text-center text-sm font-serif font-medium">
+                              {item.quantity}
+                            </span>
+                            
+                            <button
+                              onClick={() => updateQuantity(item.artwork.id, item.quantity + 1)}
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                              disabled={removingItem === item.artwork.id}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Subtotal and Remove */}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                          <div className="text-sm font-serif font-medium text-gray-900">
+                            Subtotal: {((item.artwork.price || 0) * item.quantity).toLocaleString()} SEK
+                          </div>
+                          
+                          <button
+                            onClick={() => handleRemoveItem(item.artwork.id)}
+                            className="p-1 text-red-400 hover:text-red-600 transition-colors group disabled:opacity-50"
+                            title="Remove item"
+                            disabled={removingItem === item.artwork.id}
+                          >
+                            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -216,19 +301,47 @@ export default function CartSidebar() {
                 </span>
               </div>
 
-              {/* Shipping Notice */}
-              <p className="text-xs text-gray-500 text-center font-serif">
-                Certificate of authenticity included. Secure packaging and insured shipping.
-              </p>
+              {/* Enhanced Shipping Notice */}
+              <div className="text-center">
+                {totalPrice >= 2000 ? (
+                  <p className="text-xs text-green-600 font-serif">
+                    ✓ Free shipping included
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 font-serif">
+                    Add {(2000 - totalPrice).toLocaleString()} SEK more for free shipping
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 text-center font-serif mt-1">
+                  Certificate of authenticity included. Secure packaging and insured shipping.
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {checkoutError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm font-serif rounded">
+                  {checkoutError}
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3">
                 <button 
                   onClick={handleCheckout}
-                  className="w-full bg-gray-900 text-white py-3 font-serif font-medium hover:bg-gray-800 transition-colors flex items-center justify-center"
+                  disabled={isLoading}
+                  className="w-full bg-red-900 text-white py-3 font-serif font-medium hover:bg-red-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                 >
-                  Proceed to Checkout
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </button>
                 
                 <Link

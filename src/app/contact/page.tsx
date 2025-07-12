@@ -95,7 +95,7 @@ export default function ContactPage() {
                 <div className="space-y-8">
                   {/* Address */}
                   <div className="flex items-start space-x-4">
-                    <MapPin className="h-5 w-5 text-gray-600 mt-1 flex-shrink-0" />
+                    <MapPin className="h-5 w-5 text-red-900 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="text-lg font-serif font-medium text-gray-900 mb-2">Studio Address</h3>
                       <p className="text-gray-600 font-serif leading-relaxed">
@@ -107,11 +107,11 @@ export default function ContactPage() {
 
                   {/* Email */}
                   <div className="flex items-start space-x-4">
-                    <Mail className="h-5 w-5 text-gray-600 mt-1 flex-shrink-0" />
+                    <Mail className="h-5 w-5 text-red-900 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="text-lg font-serif font-medium text-gray-900 mb-2">Email</h3>
                       <p className="text-gray-600 font-serif">
-                        <a href="mailto:ajaeriksson@gmail.com" className="hover:text-gray-900 transition-colors">
+                        <a href="mailto:ajaeriksson@gmail.com" className="hover:text-red-900 transition-colors">
                           ajaeriksson@gmail.com
                         </a>
                       </p>
@@ -120,7 +120,7 @@ export default function ContactPage() {
 
                   {/* Studio Hours */}
                   <div className="flex items-start space-x-4">
-                    <Clock className="h-5 w-5 text-gray-600 mt-1 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-red-900 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="text-lg font-serif font-medium text-gray-900 mb-2">Studio Visits</h3>
                       <p className="text-gray-600 font-serif leading-relaxed">
@@ -144,12 +144,12 @@ export default function ContactPage() {
               </div>
 
               {/* Quote */}
-              <div className="border border-gray-100 rounded-lg p-6">
+              <div className="border border-red-100 rounded-lg p-6 bg-red-50">
                 <blockquote className="text-lg font-serif italic text-gray-700 leading-relaxed">
                   "I welcome conversations about art, whether you're interested in acquiring a piece, 
                   discussing a commission, or simply sharing thoughts about the creative process."
                 </blockquote>
-                <p className="text-gray-600 font-serif mt-4 text-sm">— Aja Eriksson von Weissenberg</p>
+                <p className="text-red-900 font-serif mt-4 text-sm">— Aja Eriksson von Weissenberg</p>
               </div>
             </div>
 
@@ -167,7 +167,7 @@ export default function ContactPage() {
 
               {isSubmitted ? (
                 <div className="text-center py-12">
-                  <CheckCircle className="h-12 w-12 text-gray-600 mx-auto mb-6" />
+                  <CheckCircle className="h-12 w-12 text-red-900 mx-auto mb-6" />
                   <h3 className="text-xl font-serif font-medium text-gray-900 mb-4">Message Sent</h3>
                   <p className="text-gray-600 font-serif leading-relaxed">
                     Thank you for your inquiry. Aja will respond within 2-3 business days.
@@ -193,7 +193,7 @@ export default function ContactPage() {
                         name="inquiryType"
                         value={formData.inquiryType}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-serif bg-white transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif bg-white transition-all duration-200"
                       >
                         <option value="general">General Inquiry</option>
                         <option value="purchase">Artwork Purchase</option>
@@ -216,7 +216,7 @@ export default function ContactPage() {
                           required
                           value={formData.name}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-serif bg-white transition-all duration-200"
+                          className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif bg-white transition-all duration-200"
                           placeholder="Enter your full name"
                         />
                       </div>
@@ -231,7 +231,7 @@ export default function ContactPage() {
                           required
                           value={formData.email}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-serif bg-white transition-all duration-200"
+                          className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif bg-white transition-all duration-200"
                           placeholder="your.email@example.com"
                         />
                       </div>
@@ -248,7 +248,7 @@ export default function ContactPage() {
                         required
                         value={formData.subject}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-serif bg-white transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif bg-white transition-all duration-200"
                         placeholder="Brief subject line"
                       />
                     </div>
@@ -264,7 +264,7 @@ export default function ContactPage() {
                         rows={6}
                         value={formData.message}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-serif bg-white transition-all duration-200 resize-vertical"
+                        className="w-full px-4 py-3 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif bg-white transition-all duration-200 resize-vertical"
                         placeholder="Please share details about your inquiry..."
                       />
                     </div>
@@ -273,7 +273,7 @@ export default function ContactPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-gray-900 text-white px-8 py-4 rounded hover:bg-gray-800 transition-all duration-200 font-serif font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                      className="w-full bg-red-900 text-white px-8 py-4 rounded hover:bg-red-800 transition-all duration-200 font-serif font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                     >
                       {isSubmitting ? (
                         <>
@@ -310,7 +310,7 @@ export default function ContactPage() {
           {/* Map Placeholder */}
           <div className="bg-white border border-gray-200 rounded-lg h-80 flex items-center justify-center">
             <div className="text-center">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <MapPin className="h-12 w-12 text-red-900 mx-auto mb-4" />
               <h3 className="text-xl font-serif font-medium text-gray-700 mb-2">Carl Grimbergsgatan</h3>
               <p className="text-gray-600 font-serif">
                 Göteborg, Sweden<br />

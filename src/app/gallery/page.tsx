@@ -21,6 +21,8 @@ interface Artwork {
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
   inStock?: boolean;
   createdAt?: any;
+  collection?: string;
+  tags?: string[]; // Added tags field
 }
 
 function GalleryContent() {
@@ -35,6 +37,7 @@ function GalleryContent() {
   const filterType: string | null = searchParams ? searchParams.get('type') : null;
   const sortType: string | null = searchParams ? searchParams.get('sort') : null;
   const category: string | null = searchParams ? searchParams.get('category') : null;
+  const collectionFilter: string | null = searchParams ? searchParams.get('collection') : null; // Added collection parameter
 
   // Load artworks from Firebase
   useEffect(() => {
@@ -67,6 +70,13 @@ function GalleryContent() {
   // Filter and sort artworks based on URL parameters
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = [...artworks];
+
+    // Apply collection filter (NEW)
+    if (collectionFilter) {
+      filtered = filtered.filter(artwork => 
+        artwork.collection && artwork.collection.trim().toLowerCase() === collectionFilter.toLowerCase()
+      );
+    }
 
     // Apply type filter
     if (filterType) {
@@ -116,10 +126,33 @@ function GalleryContent() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting and tag-based filtering
     if (sortType) {
       switch (sortType) {
         case 'newest':
+          // Filter by "New" tag if available, otherwise show newest by date
+          const newTaggedItems = filtered.filter(artwork => 
+            artwork.tags?.some(tag => tag.toLowerCase().includes('new'))
+          );
+          if (newTaggedItems.length > 0) {
+            filtered = newTaggedItems;
+          }
+          filtered.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          });
+          break;
+        case 'popular':
+          // Filter by "Popular" or "Best Seller" tags
+          filtered = filtered.filter(artwork => 
+            artwork.tags?.some(tag => 
+              tag.toLowerCase().includes('popular') || 
+              tag.toLowerCase().includes('best seller') ||
+              tag.toLowerCase().includes('featured')
+            )
+          );
+          // Sort by creation date within popular items
           filtered.sort((a, b) => {
             const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
             const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
@@ -142,23 +175,20 @@ function GalleryContent() {
         case 'title':
           filtered.sort((a, b) => a.title.localeCompare(b.title));
           break;
-        case 'popular':
-          // For now, sort by creation date (could be enhanced with view tracking)
-          filtered.sort((a, b) => {
-            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
-            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-            return dateB.getTime() - dateA.getTime();
-          });
-          break;
       }
     }
 
     return filtered;
-  }, [artworks, filterType, sortType, category]);
+  }, [artworks, filterType, sortType, category, collectionFilter]); // Added collectionFilter to dependencies
 
-  // Get display title based on filters
+  // Get display title based on filters (UPDATED)
   const getDisplayTitle = () => {
-    if (filterType && sortType) {
+    if (collectionFilter) {
+      if (filterType || sortType) {
+        return `${collectionFilter} - ${filterType ? getFilterLabel(filterType) : ''}${filterType && sortType ? ' - ' : ''}${sortType ? getSortLabel(sortType) : ''}`;
+      }
+      return collectionFilter;
+    } else if (filterType && sortType) {
       return `${getFilterLabel(filterType)} - ${getSortLabel(sortType)}`;
     } else if (filterType) {
       return getFilterLabel(filterType);
@@ -185,9 +215,9 @@ function GalleryContent() {
 
   const getSortLabel = (sort: string) => {
     switch (sort) {
-      case 'newest': return 'Latest Works';
+      case 'newest': return 'New Release';
       case 'oldest': return 'Earlier Works';
-      case 'popular': return 'Popular Pieces';
+      case 'popular': return 'Most Popular';
       case 'price-low': return 'Price: Low to High';
       case 'price-high': return 'Price: High to Low';
       case 'title': return 'Alphabetical';
@@ -253,13 +283,13 @@ function GalleryContent() {
       <div className="min-h-screen bg-white">
         {/* Header with Filter Info */}
         <section className="pt-12 pb-8 border-b border-gray-100">
-          <div className="max-w-[1400px] mx-auto px-6">{/* Smaller: reduced from 1600px to 1400px */}
+          <div className="max-w-[1400px] mx-auto px-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-3xl font-serif font-light text-gray-900">
                   {getDisplayTitle()}
                 </h1>
-                {(filterType || sortType || category) && (
+                {(filterType || sortType || category || collectionFilter) && ( // Added collectionFilter
                   <p className="text-gray-600 font-serif mt-2">
                     {filteredAndSortedArtworks.length} {filteredAndSortedArtworks.length === 1 ? 'artwork' : 'artworks'}
                   </p>
@@ -267,23 +297,33 @@ function GalleryContent() {
               </div>
               
               {/* Clear Filters */}
-              {(filterType || sortType || category) && (
-                <a
-                  href="/gallery"
-                  className="text-gray-600 hover:text-gray-900 font-serif text-sm transition-colors mt-4 sm:mt-0"
-                >
-                  View All Artworks
-                </a>
+              {(filterType || sortType || category || collectionFilter) && ( // Added collectionFilter
+                <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+                  {collectionFilter && (
+                    <a
+                      href="/collections"
+                      className="text-gray-600 hover:text-gray-900 font-serif text-sm transition-colors"
+                    >
+                      ← Back to Collections
+                    </a>
+                  )}
+                  <a
+                    href="/gallery"
+                    className="text-gray-600 hover:text-gray-900 font-serif text-sm transition-colors"
+                  >
+                    View All Artworks
+                  </a>
+                </div>
               )}
             </div>
           </div>
         </section>
 
         {/* Artworks Grid */}
-        <section className="py-24">{/* Increased from py-16 to py-24 for more space before/after images */}
-          <div className="max-w-[1400px] mx-auto px-6">{/* Smaller: reduced from 1600px to 1400px */}
+        <section className="py-24">
+          <div className="max-w-[1400px] mx-auto px-6">
             {filteredAndSortedArtworks.length === 0 ? (
-              <div className="text-center py-24">{/* Increased from py-16 to py-24 to match section spacing */}
+              <div className="text-center py-24">
                 {artworks.length === 0 ? (
                   <>
                     <h3 className="text-xl font-serif font-light text-gray-900 mb-4">Gallery Coming Soon</h3>
@@ -291,21 +331,47 @@ function GalleryContent() {
                   </>
                 ) : (
                   <>
-                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">No Artworks Found</h3>
+                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">
+                      {collectionFilter 
+                        ? `No Artworks in "${collectionFilter}" Collection`
+                        : sortType === 'popular'
+                        ? 'No Popular Artworks Found'
+                        : sortType === 'newest'
+                        ? 'No New Artworks Found'
+                        : 'No Artworks Found'
+                      }
+                    </h3>
                     <p className="text-gray-600 font-serif mb-6">
-                      No artworks match your current filter criteria.
+                      {collectionFilter 
+                        ? `The "${collectionFilter}" collection appears to be empty or the collection name may have changed.`
+                        : sortType === 'popular'
+                        ? 'No artworks are currently tagged as popular. Check back soon or browse all artworks.'
+                        : sortType === 'newest'
+                        ? 'No artworks are currently tagged as new releases. Browse all artworks to see the latest additions.'
+                        : 'No artworks match your current filter criteria.'
+                      }
                     </p>
-                    <a
-                      href="/gallery"
-                      className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
-                    >
-                      View All Artworks
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      {collectionFilter && (
+                        <a
+                          href="/collections"
+                          className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
+                        >
+                          Browse All Collections
+                        </a>
+                      )}
+                      <a
+                        href="/gallery"
+                        className={`${collectionFilter ? 'border-2 border-red-900 text-red-900 hover:bg-red-900 hover:text-white' : 'bg-red-900 text-white hover:bg-red-800'} px-6 py-3 font-serif font-medium transition-colors`}
+                      >
+                        View All Artworks
+                      </a>
+                    </div>
                   </>
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{/* Reduced gap from 10 to 8 for more compact feel */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredAndSortedArtworks.map((artwork) => (
                   <div key={artwork.id} className="group">
                     <div className="relative">

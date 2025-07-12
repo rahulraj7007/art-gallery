@@ -1,6 +1,7 @@
 import Header from './Header';
 import Footer from './Footer';
 import CartSidebar from '@/components/cart/CartSidebar';
+import WishlistSidebar from '@/components/wishlist/WishlistSidebar';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -15,13 +16,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
           Free shipping on orders over €200 • Worldwide delivery available
         </p>
       </div>
-      
+             
       <Header />
       <main className="flex-1">
         {children}
       </main>
       <Footer />
       <CartSidebar />
+      <WishlistSidebar />
     </div>
   );
 }

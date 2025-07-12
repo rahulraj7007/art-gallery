@@ -1,25 +1,138 @@
+// Enhanced src/components/layout/Header.tsx (With Collections Dropdown Added)
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, ShoppingBag, User, LogOut, Settings, Package, ChevronDown } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, LogOut, Settings, Package, ChevronDown, Heart } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useCartStore } from '@/lib/store/cartStore';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
+
+interface Artwork {
+  id: string;
+  title: string;
+  artist: string;
+  price?: number;
+  imageUrl: string;
+  description?: string;
+  medium?: string;
+  dimensions?: string;
+  category?: string;
+  year?: number;
+  availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
+  inStock?: boolean;
+  createdAt?: any;
+  collection?: string;
+}
+
+interface CollectionGroup {
+  name: string;
+  count: number;
+}
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
+  const [isCollectionsMenuOpen, setIsCollectionsMenuOpen] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [collectionsHoverTimeout, setCollectionsHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Collections state
+  const [collections, setCollections] = useState<CollectionGroup[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  
+  // Animation states for cart and wishlist icons
+  const [cartAnimate, setCartAnimate] = useState(false);
+  const [wishlistAnimate, setWishlistAnimate] = useState(false);
+  
   const userMenuRef = useRef<HTMLDivElement>(null);
   const shopMenuRef = useRef<HTMLDivElement>(null);
+  const collectionsMenuRef = useRef<HTMLDivElement>(null);
   
   const { user, userProfile, logout, isAdmin } = useAuth();
   const router = useRouter();
-  const { items, toggleCart } = useCartStore();
   
-  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+  // Cart store usage
+  const { items: cartItems, toggleCart, lastAddedItem } = useCartStore();
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  // Wishlist store usage
+  const { 
+    items: wishlistItems, 
+    toggleWishlist, 
+    lastAddedItem: lastAddedWishlistItem,
+    loadWishlist 
+  } = useWishlistStore();
+
+  // Load collections from Firebase
+  useEffect(() => {
+    const loadCollections = async () => {
+      try {
+        setCollectionsLoading(true);
+        
+        // Fetch all artworks to group by collection
+        const artworksRef = collection(db, 'artworks');
+        const artworksQuery = query(artworksRef, orderBy('createdAt', 'desc'));
+        const artworksSnapshot = await getDocs(artworksQuery);
+        const allArtworks = artworksSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Artwork[];
+
+        // Group artworks by collection
+        const collectionMap = new Map<string, number>();
+        
+        allArtworks.forEach(artwork => {
+          if (artwork.collection && artwork.collection.trim()) {
+            const collectionName = artwork.collection.trim();
+            collectionMap.set(collectionName, (collectionMap.get(collectionName) || 0) + 1);
+          }
+        });
+
+        // Convert to array and sort by count (largest collections first)
+        const collectionsArray = Array.from(collectionMap.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count);
+
+        setCollections(collectionsArray);
+        
+      } catch (error) {
+        console.error('Error loading collections:', error);
+      } finally {
+        setCollectionsLoading(false);
+      }
+    };
+
+    loadCollections();
+  }, []);
+
+  // Load wishlist on component mount
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
+
+  // Animate cart icon when item is added
+  useEffect(() => {
+    if (lastAddedItem) {
+      setCartAnimate(true);
+      const timer = setTimeout(() => setCartAnimate(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAddedItem]);
+
+  // Animate wishlist icon when item is added
+  useEffect(() => {
+    if (lastAddedWishlistItem) {
+      setWishlistAnimate(true);
+      const timer = setTimeout(() => setWishlistAnimate(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAddedWishlistItem]);
 
   // Handle shop menu hover with delay
   const handleShopMenuEnter = () => {
@@ -27,14 +140,42 @@ export default function Header() {
       clearTimeout(shopHoverTimeout);
       setShopHoverTimeout(null);
     }
+    // Close collections menu when opening shop menu
+    setIsCollectionsMenuOpen(false);
+    if (collectionsHoverTimeout) {
+      clearTimeout(collectionsHoverTimeout);
+      setCollectionsHoverTimeout(null);
+    }
     setIsShopMenuOpen(true);
   };
 
   const handleShopMenuLeave = () => {
     const timeout = setTimeout(() => {
       setIsShopMenuOpen(false);
-    }, 150); // 150ms delay before closing
+    }, 150);
     setShopHoverTimeout(timeout);
+  };
+
+  // Handle collections menu hover with delay
+  const handleCollectionsMenuEnter = () => {
+    if (collectionsHoverTimeout) {
+      clearTimeout(collectionsHoverTimeout);
+      setCollectionsHoverTimeout(null);
+    }
+    // Close shop menu when opening collections menu
+    setIsShopMenuOpen(false);
+    if (shopHoverTimeout) {
+      clearTimeout(shopHoverTimeout);
+      setShopHoverTimeout(null);
+    }
+    setIsCollectionsMenuOpen(true);
+  };
+
+  const handleCollectionsMenuLeave = () => {
+    const timeout = setTimeout(() => {
+      setIsCollectionsMenuOpen(false);
+    }, 150);
+    setCollectionsHoverTimeout(timeout);
   };
 
   // Close menus when clicking outside (only for user menu now)
@@ -49,14 +190,17 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (shopHoverTimeout) {
         clearTimeout(shopHoverTimeout);
       }
+      if (collectionsHoverTimeout) {
+        clearTimeout(collectionsHoverTimeout);
+      }
     };
-  }, [shopHoverTimeout]);
+  }, [shopHoverTimeout, collectionsHoverTimeout]);
 
   const handleLogout = async () => {
     try {
@@ -69,15 +213,14 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-100 relative z-50">
+    <header className="bg-white border-b border-gray-100 relative z-50 mb-10">
       {/* Top Section - Artist Name and User Actions */}
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-20">{/* Increased from h-16 to h-20 */}
+          <div className="flex justify-between items-center h-20">
             {/* Artist Name - Centered */}
             <div className="flex-1"></div>
             <Link href="/" className="flex items-center group">
-              {/* Using your elegant logo image */}
               <div className="text-center group-hover:opacity-80 transition-opacity">
                 <img 
                   src="/aja-logo.jpg" 
@@ -87,17 +230,38 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Right side - Cart and User */}
+            {/* Right side - Wishlist, Cart and User */}
             <div className="flex-1 flex items-center justify-end space-x-4">
-              {/* Shopping Cart */}
+              {/* Wishlist Button */}
+              <button
+                onClick={toggleWishlist}
+                className={`relative p-2 text-gray-700 hover:text-red-900 transition-all duration-200 ${
+                  wishlistAnimate ? 'scale-110' : 'scale-100'
+                }`}
+              >
+                <Heart className={`h-5 w-5 ${wishlistItems.length > 0 ? 'fill-current text-red-900' : ''}`} />
+                {wishlistItems.length > 0 && (
+                  <span className={`absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium transition-all duration-200 ${
+                    wishlistAnimate ? 'scale-125 bg-green-600' : 'scale-100 bg-red-900'
+                  }`}>
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Enhanced Shopping Cart with Animation */}
               <button
                 onClick={toggleCart}
-                className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors"
+                className={`relative p-2 text-gray-700 hover:text-red-900 transition-all duration-200 ${
+                  cartAnimate ? 'scale-110' : 'scale-100'
+                }`}
               >
                 <ShoppingBag className="h-5 w-5" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                    {itemCount}
+                {cartItemCount > 0 && (
+                  <span className={`absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium transition-all duration-200 ${
+                    cartAnimate ? 'scale-125 bg-green-600' : 'scale-100 bg-red-900'
+                  }`}>
+                    {cartItemCount}
                   </span>
                 )}
               </button>
@@ -181,7 +345,7 @@ export default function Header() {
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="bg-gray-900 text-white px-4 py-2 text-sm font-serif font-medium hover:bg-gray-800 transition-colors rounded"
+                    className="bg-red-900 text-white px-4 py-2 text-sm font-serif font-medium hover:bg-red-800 transition-colors rounded"
                   >
                     Sign up
                   </Link>
@@ -202,13 +366,13 @@ export default function Header() {
 
       {/* Bottom Section - Navigation Links */}
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex justify-center items-center h-16 py-4">{/* Increased from h-12 to h-16 and added py-4 */}
+        <div className="flex justify-center items-center h-16 py-4">
           {/* Desktop Navigation - Centered */}
           <nav className="hidden lg:flex items-center space-x-8">
-            <Link
-              href="/gallery?type=for-sale"
-              className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
-            >
+           <Link
+  href="/gallery"
+  className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
+>
               ORIGINAL PAINTINGS
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
             </Link>
@@ -228,6 +392,58 @@ export default function Header() {
               MOST POPULAR
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
             </Link>
+
+            {/* Collections Dropdown */}
+            {collections.length > 0 && (
+              <div 
+                className="relative" 
+                ref={collectionsMenuRef}
+                onMouseEnter={handleCollectionsMenuEnter}
+                onMouseLeave={handleCollectionsMenuLeave}
+              >
+                <div className="relative flex items-center space-x-1 text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group cursor-pointer">
+                  <span>COLLECTIONS</span>
+                  <ChevronDown className="h-3 w-3" />
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
+                </div>
+
+                {isCollectionsMenuOpen && (
+                  <div 
+                    className="absolute top-full left-0 mt-1 w-52 bg-white border border-gray-100 shadow-lg py-2 rounded-lg z-50 max-h-80 overflow-y-auto"
+                    onMouseEnter={handleCollectionsMenuEnter}
+                    onMouseLeave={handleCollectionsMenuLeave}
+                  >
+                    {collectionsLoading ? (
+                      <div className="px-4 py-3 text-sm font-serif text-gray-500">
+                        Loading collections...
+                      </div>
+                    ) : (
+                      <>
+                        <Link
+                          href="/collections"
+                          className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
+                          onClick={() => setIsCollectionsMenuOpen(false)}
+                        >
+                          VIEW ALL COLLECTIONS
+                          <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
+                        </Link>
+                        {collections.map((collection) => (
+                          <Link
+                            key={collection.name}
+                            href={`/gallery?collection=${encodeURIComponent(collection.name)}`}
+                            className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
+                            onClick={() => setIsCollectionsMenuOpen(false)}
+                          >
+                            {collection.name}
+                            <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
+                          </Link>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Shop Art Dropdown */}
             <div 
@@ -331,9 +547,9 @@ export default function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 py-6">{/* Increased from py-4 to py-6 */}
+        <div className="lg:hidden border-t border-gray-100 py-6">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="space-y-6">{/* Increased from space-y-4 to space-y-6 */}
+            <div className="space-y-6">
               <Link
                 href="/gallery?type=for-sale"
                 className="block text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide"
@@ -357,6 +573,41 @@ export default function Header() {
               >
                 MOST POPULAR
               </Link>
+
+              {/* Mobile Collections Section */}
+              {collections.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">COLLECTIONS</div>
+                  <div className="pl-4 space-y-2">
+                    <Link
+                      href="/collections"
+                      className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      VIEW ALL COLLECTIONS
+                    </Link>
+                    {collections.slice(0, 8).map((collection) => (
+                      <Link
+                        key={collection.name}
+                        href={`/gallery?collection=${encodeURIComponent(collection.name)}`}
+                        className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {collection.name}
+                      </Link>
+                    ))}
+                    {collections.length > 8 && (
+                      <Link
+                        href="/collections"
+                        className="block text-xs font-serif text-gray-500 hover:text-gray-700 transition-colors italic"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        + {collections.length - 8} more collections
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Mobile Shop Art Section */}
               <div className="space-y-2">
@@ -444,7 +695,7 @@ export default function Header() {
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="bg-gray-900 text-white px-4 py-2 text-sm font-serif font-medium hover:bg-gray-800 transition-colors text-center rounded"
+                    className="bg-red-900 text-white px-4 py-2 text-sm font-serif font-medium hover:bg-red-800 transition-colors text-center rounded"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sign up

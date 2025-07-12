@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import Image from 'next/image';
 
 interface Artwork {
   id: string;
@@ -20,39 +21,81 @@ interface Artwork {
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
   inStock?: boolean;
   createdAt?: any;
+  collection?: string;
+}
+
+interface CollectionGroup {
+  name: string;
+  artworks: Artwork[];
+  count: number;
+  featuredArtwork: Artwork;
 }
 
 export default function HomePage() {
   const [heroArtwork, setHeroArtwork] = useState<Artwork | null>(null);
+  const [collections, setCollections] = useState<CollectionGroup[]>([]);
+  const [totalCollections, setTotalCollections] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Load hero artwork from Firebase
+  // Load hero artwork and collections from Firebase
   useEffect(() => {
-    const loadHeroArtwork = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         
-        // Get the most recent landscape artwork as hero image
-        const q = query(collection(db, 'artworks'), orderBy('createdAt', 'desc'), limit(1));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const artworkData = {
-            id: querySnapshot.docs[0].id,
-            ...querySnapshot.docs[0].data()
-          } as Artwork;
-          
-          setHeroArtwork(artworkData);
+        // Get all artworks
+        const artworksRef = collection(db, 'artworks');
+        const artworksQuery = query(artworksRef, orderBy('createdAt', 'desc'));
+        const artworksSnapshot = await getDocs(artworksQuery);
+        const allArtworks = artworksSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Artwork[];
+
+        // Set hero artwork (most recent)
+        if (allArtworks.length > 0) {
+          setHeroArtwork(allArtworks[0]);
         }
+
+        // Group artworks by collection
+        const collectionMap = new Map<string, Artwork[]>();
+        
+        allArtworks.forEach(artwork => {
+          if (artwork.collection && artwork.collection.trim()) {
+            const collectionName = artwork.collection.trim();
+            if (!collectionMap.has(collectionName)) {
+              collectionMap.set(collectionName, []);
+            }
+            collectionMap.get(collectionName)?.push(artwork);
+          }
+        });
+
+        // Convert to array and sort by count (largest collections first)
+        const allCollectionsArray = Array.from(collectionMap.entries())
+          .map(([name, artworks]) => ({
+            name,
+            artworks: artworks.slice(0, 4), // Limit to 4 artworks per collection for display
+            count: artworks.length,
+            featuredArtwork: artworks[0] // Use first artwork as featured
+          }))
+          .filter(collection => collection.count > 0) // Only collections with artworks
+          .sort((a, b) => b.count - a.count); // Sort by size
+
+        // Set total collections count
+        setTotalCollections(allCollectionsArray.length);
+
+        // Show only first 3 collections on homepage
+        const displayedCollections = allCollectionsArray.slice(0, 3);
+        setCollections(displayedCollections);
         
       } catch (error) {
-        console.error('Error loading hero artwork:', error);
+        console.error('Error loading data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadHeroArtwork();
+    loadData();
   }, []);
 
   if (loading) {
@@ -168,72 +211,70 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Collections Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-gray-900 mb-4">
-              Collections
-            </h2>
-            <p className="text-lg font-serif text-gray-600">
-              Explore curated collections of Nordic-inspired artworks
-            </p>
+      {/* Real Collections Section - Only show if collections exist */}
+      {collections.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex items-center justify-between mb-12">
+              <div className="text-center flex-1">
+                <h2 className="text-3xl md:text-4xl font-serif font-light text-gray-900 mb-4">
+                  Collections
+                </h2>
+                <p className="text-lg font-serif text-gray-600">
+                  Explore curated collections of Nordic-inspired artworks
+                </p>
+              </div>
+              
+              {totalCollections > 3 && (
+                <Link
+                  href="/collections"
+                  className="text-red-900 font-serif font-medium hover:text-red-800 transition-colors ml-8"
+                >
+                  View All ({totalCollections}) →
+                </Link>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {collections.map((collection) => (
+                <Link
+                  key={collection.name}
+                  href={`/gallery?collection=${encodeURIComponent(collection.name)}`}
+                  className="group"
+                >
+                  <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
+                    <Image
+                      src={collection.featuredArtwork.imageUrl}
+                      alt={collection.name}
+                      width={400}
+                      height={500}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
+                    {collection.name}
+                  </h3>
+                  <p className="text-sm font-serif text-gray-600">
+                    {collection.count} {collection.count === 1 ? 'artwork' : 'artworks'}
+                  </p>
+                </Link>
+              ))}
+            </div>
+
+            {/* Call to action if more collections exist */}
+            {totalCollections > 3 && (
+              <div className="text-center mt-12">
+                <Link
+                  href="/collections"
+                  className="bg-red-900 text-white px-8 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
+                >
+                  View All {totalCollections} Collections
+                </Link>
+              </div>
+            )}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Link href="/gallery?category=landscapes" className="group">
-              <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
-                <div 
-                  className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
-                  style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=500&fit=crop')`
-                  }}
-                ></div>
-              </div>
-              <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
-                Nordic Landscapes
-              </h3>
-              <p className="text-sm font-serif text-gray-600">
-                Capturing the ethereal beauty of Scandinavian nature
-              </p>
-            </Link>
-
-            <Link href="/gallery?category=abstract" className="group">
-              <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
-                <div 
-                  className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
-                  style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=500&fit=crop')`
-                  }}
-                ></div>
-              </div>
-              <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
-                Abstract Expressions
-              </h3>
-              <p className="text-sm font-serif text-gray-600">
-                Emotional interpretations of light and shadow
-              </p>
-            </Link>
-
-            <Link href="/gallery?category=portraits" className="group">
-              <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
-                <div 
-                  className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
-                  style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=400&h=500&fit=crop')`
-                  }}
-                ></div>
-              </div>
-              <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
-                Contemplative Portraits
-              </h3>
-              <p className="text-sm font-serif text-gray-600">
-                Intimate studies of the human condition
-              </p>
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Prints Section */}
       <section className="py-16 bg-gray-50">
