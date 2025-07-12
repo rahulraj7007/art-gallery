@@ -1,4 +1,4 @@
-// src/app/admin/page.tsx - Fixed version with no duplicate declarations
+// src/app/admin/page.tsx - Complete version with Print Availability Options
 
 'use client';
 
@@ -45,6 +45,8 @@ interface Artwork {
   tags?: string[];
   year?: number;
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
+  availableAsPaperPrint?: boolean;
+  availableAsCanvasPrint?: boolean;
   createdAt: any;
   updatedAt?: any;
 }
@@ -356,6 +358,8 @@ export default function AdminDashboard() {
       availabilityType: 'enquire-only' as 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold',
       price: '',
       inStock: true,
+      availableAsPaperPrint: true,
+      availableAsCanvasPrint: true,
     });
 
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -508,6 +512,8 @@ export default function AdminDashboard() {
           tags: selectedTags,
           year: formData.year,
           availabilityType: formData.availabilityType,
+          availableAsPaperPrint: formData.availableAsPaperPrint,
+          availableAsCanvasPrint: formData.availableAsCanvasPrint,
           imageUrl,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -534,6 +540,8 @@ export default function AdminDashboard() {
           availabilityType: 'enquire-only',
           price: '',
           inStock: true,
+          availableAsPaperPrint: true,
+          availableAsCanvasPrint: true,
         });
         setImageFile(null);
         setImagePreview(null);
@@ -813,6 +821,42 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {/* Print Availability Options */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Print Availability
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="availableAsPaperPrint"
+                    checked={formData.availableAsPaperPrint}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Available as Paper Print
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="availableAsCanvasPrint"
+                    checked={formData.availableAsCanvasPrint}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Available as Canvas Print
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Control which print formats are available for this artwork. Both are enabled by default.
+              </p>
+            </div>
+
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -946,6 +990,8 @@ export default function AdminDashboard() {
       availabilityType: artwork.availabilityType || 'for-sale',
       price: artwork.price ? artwork.price.toString() : '',
       inStock: artwork.inStock ?? true,
+      availableAsPaperPrint: artwork.availableAsPaperPrint ?? true,
+      availableAsCanvasPrint: artwork.availableAsCanvasPrint ?? true,
     });
 
     const [selectedTags, setSelectedTags] = useState<string[]>(artwork.tags || []);
@@ -1092,6 +1138,8 @@ export default function AdminDashboard() {
           tags: selectedTags,
           year: formData.year,
           availabilityType: formData.availabilityType,
+          availableAsPaperPrint: formData.availableAsPaperPrint,
+          availableAsCanvasPrint: formData.availableAsCanvasPrint,
           imageUrl,
           // Only include price for 'for-sale' items
           ...(formData.availabilityType === 'for-sale' && formData.price && {
@@ -1344,6 +1392,42 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {/* Print Availability Options - Edit Modal */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Print Availability
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="availableAsPaperPrint"
+                    checked={formData.availableAsPaperPrint}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Available as Paper Print
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="availableAsCanvasPrint"
+                    checked={formData.availableAsCanvasPrint}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Available as Canvas Print
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Control which print formats are available for this artwork.
+              </p>
+            </div>
 
             {/* Description */}
             <div>
@@ -1835,6 +1919,25 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                         )}
+
+                        {/* Print Availability Display */}
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {artwork.availableAsPaperPrint && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 font-medium">
+                              📄 Paper Print
+                            </span>
+                          )}
+                          {artwork.availableAsCanvasPrint && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 font-medium">
+                              🖼️ Canvas Print
+                            </span>
+                          )}
+                          {!artwork.availableAsPaperPrint && !artwork.availableAsCanvasPrint && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 font-medium">
+                              🚫 No Prints Available
+                            </span>
+                          )}
+                        </div>
                         
                         <div className="mt-2">
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${availabilityInfo.color}`}>

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/lib/store/cartStore';
-import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useWishlistStore, createOriginalWishlistItem } from '@/lib/store/wishlistStore';
 import { ArrowLeft, Mail, ShoppingCart, Heart, Share2, Check, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -149,7 +149,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
     }
   };
 
-  // Fixed wishlist handling using wishlist store
+  // Fixed wishlist handling using wishlist store with proper typing
   const handleWishlist = () => {
     if (!artwork) return;
     
@@ -158,15 +158,15 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
       removeFromWishlist(artwork.id);
       setToastMessage('Removed from wishlist');
     } else {
-      // Add to wishlist
-      const wishlistItem = {
+      // Add to wishlist using helper function
+      const wishlistItem = createOriginalWishlistItem({
         id: artwork.id,
         title: artwork.title,
         artist: artwork.artist,
         imageUrl: artwork.imageUrl,
         price: artwork.price,
         availabilityType: artwork.availabilityType
-      };
+      });
       addToWishlist(wishlistItem);
       setToastMessage('Added to wishlist!');
     }

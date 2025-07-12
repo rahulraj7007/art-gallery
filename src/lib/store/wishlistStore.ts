@@ -1,117 +1,196 @@
-// lib/store/wishlistStore.ts
-import { create } from 'zustand';
+// src/lib/store/wishlistStore.ts - Updated to support originals and prints
 
-interface WishlistItem {
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+// Updated interface to support both originals and prints
+export interface WishlistItem {
   id: string;
   title: string;
   artist: string;
   imageUrl: string;
   price?: number;
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
-  addedAt: Date;
+  type: 'original' | 'print';        // NEW: Item type
+  printSize?: string;                // NEW: For prints only (e.g., 'a3', 'a4')
+  printType?: string;                // NEW: For prints only (e.g., 'paper', 'canvas')
+  printSizeName?: string;            // NEW: Display name (e.g., 'A3', 'A4')
+  printTypeName?: string;            // NEW: Display name (e.g., 'Paper Print', 'Canvas Print')
 }
 
-interface WishlistStore {
+interface WishlistState {
   items: WishlistItem[];
   isOpen: boolean;
   lastAddedItem: string | null;
   
   // Actions
-  loadWishlist: () => void;
-  addItem: (artwork: Omit<WishlistItem, 'addedAt'>) => void;
-  removeItem: (artworkId: string) => void;
+  addItem: (item: WishlistItem) => void;
+  removeItem: (id: string) => void;
+  clearWishlist: () => void;
+  isInWishlist: (id: string) => boolean;
   toggleWishlist: () => void;
-  closeWishlist: () => void;
   openWishlist: () => void;
-  isInWishlist: (artworkId: string) => boolean;
-  clearLastAdded: () => void;
+  closeWishlist: () => void;
+  loadWishlist: () => void;
+  
+  // New: Get items by type
+  getOriginals: () => WishlistItem[];
+  getPrints: () => WishlistItem[];
+  getItemsByArtwork: (artworkId: string) => WishlistItem[];
 }
 
-export const useWishlistStore = create<WishlistStore>((set, get) => ({
-  items: [],
-  isOpen: false,
-  lastAddedItem: null,
+export const useWishlistStore = create<WishlistState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      lastAddedItem: null,
 
-  loadWishlist: () => {
-    if (typeof window !== 'undefined') {
-      const wishlistIds = JSON.parse(localStorage.getItem('artworkWishlist') || '[]');
-      const wishlistData = JSON.parse(localStorage.getItem('wishlistData') || '{}');
+      addItem: (item: WishlistItem) => {
+        const { items } = get();
+        
+        // Check if item already exists
+        const existingItem = items.find(existingItem => existingItem.id === item.id);
+        
+        if (!existingItem) {
+          set(state => ({
+            items: [...state.items, item],
+            lastAddedItem: item.id
+          }));
+          
+          // Clear lastAddedItem after 3 seconds
+          setTimeout(() => {
+            set({ lastAddedItem: null });
+          }, 3000);
+        }
+      },
+
+      removeItem: (id: string) => {
+        set(state => ({
+          items: state.items.filter(item => item.id !== id)
+        }));
+      },
+
+      clearWishlist: () => {
+        set({ items: [], lastAddedItem: null });
+      },
+
+      isInWishlist: (id: string) => {
+        const { items } = get();
+        return items.some(item => item.id === id);
+      },
+
+      toggleWishlist: () => {
+        set(state => ({ isOpen: !state.isOpen }));
+      },
+
+      openWishlist: () => {
+        set({ isOpen: true });
+      },
+
+      closeWishlist: () => {
+        set({ isOpen: false });
+      },
+
+      loadWishlist: () => {
+        // This function ensures the store is loaded from localStorage
+        // The persist middleware handles this automatically, but we keep this
+        // for compatibility with existing code
+      },
+
+      // NEW: Get only original artworks
+      getOriginals: () => {
+        const { items } = get();
+        return items.filter(item => item.type === 'original');
+      },
+
+      // NEW: Get only prints
+      getPrints: () => {
+        const { items } = get();
+        return items.filter(item => item.type === 'print');
+      },
+
+      // NEW: Get all items for a specific artwork (both original and prints)
+      getItemsByArtwork: (artworkId: string) => {
+        const { items } = get();
+        return items.filter(item => 
+          item.id === artworkId || // Original artwork
+          item.id.startsWith(`${artworkId}-print-`) // Prints of this artwork
+        );
+      }
+    }),
+    {
+      name: 'artwork-wishlist-storage',
+      version: 1,
       
-      const items = wishlistIds.map((id: string) => wishlistData[id]).filter(Boolean);
-      set({ items });
+      // Migration function to handle old wishlist data
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          // Migrate old wishlist items to new format
+          const oldItems = persistedState.items || [];
+          const migratedItems = oldItems.map((item: any) => ({
+            ...item,
+            type: 'original', // Assume old items were originals
+            printSize: undefined,
+            printType: undefined,
+            printSizeName: undefined,
+            printTypeName: undefined
+          }));
+          
+          return {
+            ...persistedState,
+            items: migratedItems
+          };
+        }
+        
+        return persistedState;
+      }
     }
-  },
+  )
+);
 
-  addItem: (artwork) => {
-    const { items } = get();
-    
-    // Check if item already exists
-    if (items.find(item => item.id === artwork.id)) {
-      return;
-    }
+// Helper functions for creating wishlist items
 
-    const newItem: WishlistItem = {
-      ...artwork,
-      addedAt: new Date()
-    };
+// Create original artwork wishlist item
+export const createOriginalWishlistItem = (artwork: {
+  id: string;
+  title: string;
+  artist: string;
+  imageUrl: string;
+  price?: number;
+  availabilityType?: string;
+}): WishlistItem => ({
+  id: artwork.id,
+  title: artwork.title,
+  artist: artwork.artist,
+  imageUrl: artwork.imageUrl,
+  price: artwork.price,
+  availabilityType: artwork.availabilityType as any,
+  type: 'original'
+});
 
-    const updatedItems = [...items, newItem];
-    
-    // Update localStorage
-    if (typeof window !== 'undefined') {
-      const wishlistIds = updatedItems.map(item => item.id);
-      const wishlistData = updatedItems.reduce((acc, item) => {
-        acc[item.id] = item;
-        return acc;
-      }, {} as Record<string, WishlistItem>);
-      
-      localStorage.setItem('artworkWishlist', JSON.stringify(wishlistIds));
-      localStorage.setItem('wishlistData', JSON.stringify(wishlistData));
-    }
-
-    set({ 
-      items: updatedItems,
-      lastAddedItem: artwork.id
-    });
-  },
-
-  removeItem: (artworkId) => {
-    const { items } = get();
-    const updatedItems = items.filter(item => item.id !== artworkId);
-    
-    // Update localStorage
-    if (typeof window !== 'undefined') {
-      const wishlistIds = updatedItems.map(item => item.id);
-      const wishlistData = updatedItems.reduce((acc, item) => {
-        acc[item.id] = item;
-        return acc;
-      }, {} as Record<string, WishlistItem>);
-      
-      localStorage.setItem('artworkWishlist', JSON.stringify(wishlistIds));
-      localStorage.setItem('wishlistData', JSON.stringify(wishlistData));
-    }
-
-    set({ items: updatedItems });
-  },
-
-  toggleWishlist: () => {
-    set(state => ({ isOpen: !state.isOpen }));
-  },
-
-  closeWishlist: () => {
-    set({ isOpen: false });
-  },
-
-  openWishlist: () => {
-    set({ isOpen: true });
-  },
-
-  isInWishlist: (artworkId) => {
-    const { items } = get();
-    return items.some(item => item.id === artworkId);
-  },
-
-  clearLastAdded: () => {
-    set({ lastAddedItem: null });
-  }
-}));
+// Create print wishlist item
+export const createPrintWishlistItem = (artwork: {
+  id: string;
+  title: string;
+  artist: string;
+  imageUrl: string;
+}, printDetails: {
+  size: string;
+  sizeName: string;
+  type: string;
+  typeName: string;
+  price: number;
+}): WishlistItem => ({
+  id: `${artwork.id}-print-${printDetails.size}-${printDetails.type}`,
+  title: `${artwork.title} - ${printDetails.typeName} (${printDetails.sizeName})`,
+  artist: artwork.artist,
+  imageUrl: artwork.imageUrl,
+  price: printDetails.price,
+  availabilityType: 'for-sale',
+  type: 'print',
+  printSize: printDetails.size,
+  printType: printDetails.type,
+  printSizeName: printDetails.sizeName,
+  printTypeName: printDetails.typeName
+});

@@ -1,4 +1,4 @@
-// Enhanced src/components/cart/CartSidebar.tsx (Your exact structure with animations added)
+// Compact src/components/cart/CartSidebar.tsx - Simple Original/Print Indicators
 
 'use client';
 
@@ -11,7 +11,7 @@ export default function CartSidebar() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   
-  // NEW: Animation states
+  // Animation states
   const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
   const [removingItem, setRemovingItem] = useState<string | null>(null);
 
@@ -24,12 +24,11 @@ export default function CartSidebar() {
     clearCart,
     getTotalItems,
     getTotalPrice,
-    // NEW: Enhanced states
     lastAddedItem,
     clearLastAdded,
   } = useCartStore();
 
-  // NEW: Highlight newly added items
+  // Highlight newly added items
   useEffect(() => {
     if (lastAddedItem) {
       setHighlightedItem(lastAddedItem);
@@ -62,7 +61,6 @@ export default function CartSidebar() {
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll when cart is open
       document.body.style.overflow = 'hidden';
     }
 
@@ -76,11 +74,42 @@ export default function CartSidebar() {
   const handleRemoveItem = async (artworkId: string) => {
     setRemovingItem(artworkId);
     
-    // Add removal animation delay
     setTimeout(() => {
       removeItem(artworkId);
       setRemovingItem(null);
     }, 300);
+  };
+
+  // Simple type detection
+  const getItemType = (item: any) => {
+    if (item.artwork.category === 'prints' || item.artwork.category === 'print') {
+      return 'print';
+    }
+    if (item.artwork.medium && item.artwork.medium.toLowerCase().includes('print')) {
+      return 'print';
+    }
+    if (item.artwork.title && (
+      item.artwork.title.includes('Print') || 
+      item.artwork.title.includes('A3') || 
+      item.artwork.title.includes('A4')
+    )) {
+      return 'print';
+    }
+    return 'original';
+  };
+
+  // Simple text indicator
+  const getTypeIndicator = (item: any) => {
+    const itemType = getItemType(item);
+    
+    if (itemType === 'print') {
+      return (
+        <span className="text-blue-600 font-serif text-sm ml-1">- Print</span>
+      );
+    }
+    return (
+      <span className="text-green-600 font-serif text-sm ml-1">- Original Painting</span>
+    );
   };
 
   const handleCheckout = async () => {
@@ -88,8 +117,7 @@ export default function CartSidebar() {
     setCheckoutError(null);
 
     try {
-      // Get customer email if user is logged in (you might want to get this from your auth context)
-      const customerEmail = null; // Replace with actual user email if available
+      const customerEmail = null;
 
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -186,8 +214,8 @@ export default function CartSidebar() {
                         : 'border border-gray-100 bg-white hover:border-gray-200'
                     }`}
                   >
-                    <div className="flex space-x-4 relative">
-                      {/* NEW: New Item Badge */}
+                    <div className="flex relative">
+                      {/* New Item Badge */}
                       {highlightedItem === item.artwork.id && (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-serif animate-pulse z-10">
                           New!
@@ -203,16 +231,15 @@ export default function CartSidebar() {
                         <img
                           src={item.artwork.imageUrl}
                           alt={item.artwork.title}
-                          className="w-20 h-25 object-cover hover:opacity-75 transition-opacity rounded"
+                          className="w-28 h-36 object-cover hover:opacity-75 transition-opacity rounded"
                           onError={(e) => {
-                            // Fallback for broken images
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
                           }}
                         />
                       </Link>
 
                       {/* Item Details */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 ml-4">
                         <Link
                           href={`/artwork/${item.artwork.id}`}
                           onClick={closeCart}
@@ -220,6 +247,7 @@ export default function CartSidebar() {
                         >
                           <h3 className="text-sm font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors">
                             {item.artwork.title}
+                            {getTypeIndicator(item)}
                           </h3>
                           <p className="text-sm text-gray-500 font-serif">
                             by {item.artwork.artist}
@@ -252,23 +280,16 @@ export default function CartSidebar() {
                             >
                               <Plus className="w-4 h-4" />
                             </button>
-                          </div>
-                        </div>
 
-                        {/* Subtotal and Remove */}
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                          <div className="text-sm font-serif font-medium text-gray-900">
-                            Subtotal: {((item.artwork.price || 0) * item.quantity).toLocaleString()} SEK
+                            <button
+                              onClick={() => handleRemoveItem(item.artwork.id)}
+                              className="p-1 text-red-400 hover:text-red-600 transition-colors group disabled:opacity-50 ml-2"
+                              title="Remove item"
+                              disabled={removingItem === item.artwork.id}
+                            >
+                              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            </button>
                           </div>
-                          
-                          <button
-                            onClick={() => handleRemoveItem(item.artwork.id)}
-                            className="p-1 text-red-400 hover:text-red-600 transition-colors group disabled:opacity-50"
-                            title="Remove item"
-                            disabled={removingItem === item.artwork.id}
-                          >
-                            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -301,7 +322,7 @@ export default function CartSidebar() {
                 </span>
               </div>
 
-              {/* Enhanced Shipping Notice */}
+              {/* Shipping Notice */}
               <div className="text-center">
                 {totalPrice >= 2000 ? (
                   <p className="text-xs text-green-600 font-serif">

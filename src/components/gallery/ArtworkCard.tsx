@@ -1,4 +1,5 @@
-// Compact ArtworkCard Component - src/components/gallery/ArtworkCard.tsx
+// Updated ArtworkCard Component - src/components/gallery/ArtworkCard.tsx
+// Now using unified wishlist store with helper functions
 
 'use client';
 
@@ -6,7 +7,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, Eye, Mail, CheckCircle, ShoppingBag } from 'lucide-react';
-import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useWishlistStore, createOriginalWishlistItem } from '@/lib/store/wishlistStore';
 
 interface Artwork {
   id: string;
@@ -39,6 +40,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
     isInWishlist 
   } = useWishlistStore();
 
+  // Check if original artwork is in wishlist (not prints)
   const artworkInWishlist = isInWishlist(artwork.id);
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -48,14 +50,8 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
     if (artworkInWishlist) {
       removeFromWishlist(artwork.id);
     } else {
-      const wishlistItem = {
-        id: artwork.id,
-        title: artwork.title,
-        artist: artwork.artist,
-        imageUrl: artwork.imageUrl,
-        price: artwork.price,
-        availabilityType: artwork.availabilityType
-      };
+      // Use the helper function to create properly typed original wishlist item
+      const wishlistItem = createOriginalWishlistItem(artwork);
       addToWishlist(wishlistItem);
     }
   };
@@ -134,14 +130,17 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
             </Link>
 
-            {/* Wishlist button - Minimal */}
+            {/* Wishlist button - Enhanced with red theme */}
             <button
               onClick={handleWishlist}
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+              title={artworkInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
               <Heart
                 className={`h-5 w-5 transition-colors duration-200 ${
-                  artworkInWishlist ? 'text-gray-900 fill-current' : 'text-gray-700'
+                  artworkInWishlist 
+                    ? 'text-red-900 fill-current' 
+                    : 'text-gray-700 hover:text-red-900'
                 }`}
               />
             </button>

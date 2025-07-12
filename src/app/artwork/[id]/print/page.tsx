@@ -1,4 +1,4 @@
-// One-Window Compact Print Page - Everything visible without scrolling
+// Updated Print Page - Using WishlistStore for Print Items with Museum Frame
 
 'use client';
 
@@ -10,6 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Share2, Info, Truck, Shield, Award, ChevronDown, ChevronUp, Check, Loader2, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
+import { useWishlistStore, createPrintWishlistItem } from '@/lib/store/wishlistStore';
 import Toast from '@/components/ui/Toast';
 
 interface Artwork {
@@ -63,12 +64,25 @@ export default function ArtworkPrintPage() {
   const [selectedType, setSelectedType] = useState('paper');
   const [quantity, setQuantity] = useState(1);
   const [showDetails, setShowDetails] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false); // NEW: Image loading state
   
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   const { addItem, isAdding, lastAddedItem, clearLastAdded, openCart } = useCartStore();
+
+  // Updated wishlist store usage
+  const { 
+    addItem: addToWishlist, 
+    removeItem: removeFromWishlist, 
+    isInWishlist,
+    loadWishlist 
+  } = useWishlistStore();
+
+  // Load wishlist on component mount
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
 
   // Load artwork from Firebase
   useEffect(() => {
@@ -96,20 +110,15 @@ export default function ArtworkPrintPage() {
     loadArtwork();
   }, [artworkId]);
 
-  // Check if artwork is in wishlist
-  useEffect(() => {
-    if (artwork) {
-      const wishlist = JSON.parse(localStorage.getItem('artworkWishlist') || '[]');
-      setIsInWishlist(wishlist.includes(artwork.id));
-    }
-  }, [artwork]);
-
   const currentSize = printSizes.find(size => size.id === selectedSize);
   const currentType = printTypes.find(type => type.id === selectedType);
   const currentPrice = Math.round((currentSize?.price || 0) * (currentType?.priceMultiplier || 1));
   
   const printItemId = `${artwork?.id}-print-${selectedSize}-${selectedType}`;
   const wasJustAdded = lastAddedItem === printItemId;
+
+  // Check if this specific print configuration is in wishlist
+  const isInWishlist_Print = artwork ? isInWishlist(printItemId) : false;
 
   const handleAddToCart = () => {
     if (artwork && currentSize && currentType) {
@@ -144,23 +153,34 @@ export default function ArtworkPrintPage() {
     openCart();
   };
 
+  // Updated wishlist handling using wishlist store
   const handleWishlist = () => {
-    if (!artwork) return;
+    if (!artwork || !currentSize || !currentType) return;
     
-    const wishlist = JSON.parse(localStorage.getItem('artworkWishlist') || '[]');
-    
-    if (isInWishlist) {
+    if (isInWishlist_Print) {
       // Remove from wishlist
-      const updatedWishlist = wishlist.filter((id: string) => id !== artwork.id);
-      localStorage.setItem('artworkWishlist', JSON.stringify(updatedWishlist));
-      setIsInWishlist(false);
-      setToastMessage('Removed from wishlist');
+      removeFromWishlist(printItemId);
+      setToastMessage('Print removed from wishlist');
     } else {
-      // Add to wishlist
-      const updatedWishlist = [...wishlist, artwork.id];
-      localStorage.setItem('artworkWishlist', JSON.stringify(updatedWishlist));
-      setIsInWishlist(true);
-      setToastMessage('Added to wishlist!');
+      // Add to wishlist using helper function
+      const wishlistItem = createPrintWishlistItem(
+        {
+          id: artwork.id,
+          title: artwork.title,
+          artist: artwork.artist,
+          imageUrl: artwork.imageUrl
+        },
+        {
+          size: selectedSize,
+          sizeName: currentSize.name,
+          type: selectedType,
+          typeName: currentType.name,
+          price: currentPrice
+        }
+      );
+      
+      addToWishlist(wishlistItem);
+      setToastMessage(`Print "${artwork.title}" (${currentSize.name}, ${currentType.name}) added to wishlist!`);
     }
     
     setShowToast(true);
@@ -237,16 +257,32 @@ export default function ArtworkPrintPage() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
           
-          {/* Much Larger Product Image with right margin */}
+          {/* UPDATED: Much Larger Product Image with Museum Frame */}
           <div className="lg:col-span-4 mr-8">
-            <div className="aspect-[4/5] bg-gray-100 overflow-hidden rounded-lg w-full">
-              <Image
-                src={artwork.imageUrl}
-                alt={artwork.title}
-                width={1200}
-                height={1500}
-                className="w-full h-full object-cover"
-              />
+            {/* Custom Framed Image - Same as Artwork Page */}
+            <div className="inline-block w-full">
+              <div className="p-4 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300 w-full" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
+                <div className="relative inline-block overflow-hidden w-full">
+                  <div className="aspect-[4/5] w-full">
+                    <Image
+                      src={artwork.imageUrl}
+                      alt={artwork.title}
+                      width={1200}
+                      height={1500}
+                      className={`w-full h-full object-cover transition-all duration-700 ${
+                        imageLoaded ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      onLoad={() => setImageLoaded(true)}
+                      priority
+                    />
+                    
+                    {/* Loading state */}
+                    {!imageLoaded && (
+                      <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Interactive Image Actions */}
@@ -254,14 +290,14 @@ export default function ArtworkPrintPage() {
               <button 
                 onClick={handleWishlist}
                 className={`flex items-center space-x-1 transition-colors ${
-                  isInWishlist 
+                  isInWishlist_Print 
                     ? 'text-red-900' 
                     : 'text-gray-600 hover:text-red-900'
                 }`}
               >
-                <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                <Heart className={`h-4 w-4 ${isInWishlist_Print ? 'fill-current' : ''}`} />
                 <span className="text-xs font-serif">
-                  {isInWishlist ? 'In Wishlist' : 'Wishlist'}
+                  {isInWishlist_Print ? 'In Wishlist' : 'Add to Wishlist'}
                 </span>
               </button>
               <button 

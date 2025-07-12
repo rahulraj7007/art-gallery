@@ -1,4 +1,4 @@
-// Enhanced src/components/layout/Header.tsx (With Collections Dropdown Added)
+// Enhanced src/components/layout/Header.tsx (With Fixed Shop Links)
 
 'use client';
 
@@ -369,10 +369,10 @@ export default function Header() {
         <div className="flex justify-center items-center h-16 py-4">
           {/* Desktop Navigation - Centered */}
           <nav className="hidden lg:flex items-center space-x-8">
-           <Link
-  href="/gallery"
-  className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
->
+            <Link
+              href="/gallery?type=originals"
+              className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
+            >
               ORIGINAL PAINTINGS
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
             </Link>
@@ -445,7 +445,7 @@ export default function Header() {
               </div>
             )}
 
-            {/* Shop Art Dropdown */}
+            {/* Shop Art Dropdown - FIXED */}
             <div 
               className="relative" 
               ref={shopMenuRef}
@@ -465,7 +465,7 @@ export default function Header() {
                   onMouseLeave={handleShopMenuLeave}
                 >
                   <Link
-                    href="/gallery?type=for-sale"
+                    href="/gallery?type=originals"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
                     onClick={() => setIsShopMenuOpen(false)}
                   >
@@ -473,7 +473,7 @@ export default function Header() {
                     <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
                   </Link>
                   <Link
-                    href="/gallery"
+                    href="/gallery?type=all-prints"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
                     onClick={() => setIsShopMenuOpen(false)}
                   >
@@ -545,13 +545,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - FIXED */}
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-100 py-6">
           <div className="max-w-7xl mx-auto px-6">
             <div className="space-y-6">
               <Link
-                href="/gallery?type=for-sale"
+                href="/gallery?type=originals"
                 className="block text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -609,19 +609,19 @@ export default function Header() {
                 </div>
               )}
 
-              {/* Mobile Shop Art Section */}
+              {/* Mobile Shop Art Section - FIXED */}
               <div className="space-y-2">
                 <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">SHOP ART</div>
                 <div className="pl-4 space-y-2">
                   <Link
-                    href="/gallery?type=for-sale"
+                    href="/gallery?type=originals"
                     className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     ORIGINALS
                   </Link>
                   <Link
-                    href="/gallery"
+                    href="/gallery?type=all-prints"
                     className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

@@ -67,7 +67,7 @@ function GalleryContent() {
     loadArtworks();
   }, []);
 
-  // Filter and sort artworks based on URL parameters
+  // Filter and sort artworks based on URL parameters - UPDATED WITH FIXED LOGIC
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = [...artworks];
 
@@ -78,13 +78,32 @@ function GalleryContent() {
       );
     }
 
-    // Apply type filter
+    // Apply type filter - FIXED
     if (filterType) {
       switch (filterType) {
+        case 'originals':
+          // Show all original artworks that are NOT sold
+          filtered = filtered.filter(artwork => 
+            artwork.availabilityType !== 'sold'
+          );
+          break;
         case 'for-sale':
+          // Keep existing logic for backward compatibility
           filtered = filtered.filter(artwork => 
             artwork.availabilityType === 'for-sale' || !artwork.availabilityType
           );
+          break;
+        case 'all-prints':
+          // Show all artworks since they can all be printed
+          // This doesn't filter anything - shows all artworks available as prints
+          break;
+        case 'paper-prints':
+          // Show all artworks available as paper prints (which is all artworks)
+          // This doesn't filter anything since all artworks can be paper prints
+          break;
+        case 'canvas-prints':
+          // Show all artworks available as canvas prints (which is all artworks)
+          // This doesn't filter anything since all artworks can be canvas prints
           break;
         case 'enquire-only':
           filtered = filtered.filter(artwork => 
@@ -104,16 +123,6 @@ function GalleryContent() {
         case 'sold':
           filtered = filtered.filter(artwork => 
             artwork.availabilityType === 'sold'
-          );
-          break;
-        case 'paper-prints':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'paper-prints' || artwork.category?.toLowerCase().includes('paper')
-          );
-          break;
-        case 'canvas-prints':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'canvas-prints' || artwork.category?.toLowerCase().includes('canvas')
           );
           break;
       }
@@ -200,15 +209,18 @@ function GalleryContent() {
     return 'Gallery';
   };
 
+  // UPDATED getFilterLabel function
   const getFilterLabel = (filter: string) => {
     switch (filter) {
-      case 'for-sale': return 'Original Paintings';
+      case 'originals': return 'Original Paintings';
+      case 'for-sale': return 'For Sale';
+      case 'all-prints': return 'All Prints Available';
+      case 'paper-prints': return 'Paper Prints Available';
+      case 'canvas-prints': return 'Canvas Prints Available';
       case 'enquire-only': return 'Enquire for Price';
       case 'exhibition': return 'Exhibition Pieces';
       case 'commissioned': return 'Commissioned Works';
       case 'sold': return 'Sold Works';
-      case 'paper-prints': return 'Paper Prints';
-      case 'canvas-prints': return 'Canvas Prints';
       default: return filter;
     }
   };
@@ -338,6 +350,10 @@ function GalleryContent() {
                         ? 'No Popular Artworks Found'
                         : sortType === 'newest'
                         ? 'No New Artworks Found'
+                        : filterType === 'originals'
+                        ? 'No Original Paintings Available'
+                        : filterType === 'all-prints' || filterType === 'paper-prints' || filterType === 'canvas-prints'
+                        ? 'All Artworks Available as Prints'
                         : 'No Artworks Found'
                       }
                     </h3>
@@ -348,6 +364,10 @@ function GalleryContent() {
                         ? 'No artworks are currently tagged as popular. Check back soon or browse all artworks.'
                         : sortType === 'newest'
                         ? 'No artworks are currently tagged as new releases. Browse all artworks to see the latest additions.'
+                        : filterType === 'originals'
+                        ? 'All artworks appear to be sold or unavailable. Check back soon for new original paintings.'
+                        : filterType === 'all-prints' || filterType === 'paper-prints' || filterType === 'canvas-prints'
+                        ? 'All artworks in the gallery are available as prints. Visit any artwork page to configure your print options.'
                         : 'No artworks match your current filter criteria.'
                       }
                     </p>
