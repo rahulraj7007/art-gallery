@@ -294,12 +294,14 @@ export default function HomePage() {
                   ensuring your artwork maintains its beauty for generations to come.
                 </p>
               </div>
+              <div className="text-center mt-12">
               <Link
-                href="/gallery?category=prints"
+                href="/prints"
                 className="bg-red-900 text-white px-8 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
               >
                 Shop Prints
               </Link>
+              </div>
             </div>
             <div className="aspect-[4/5] bg-gray-100 overflow-hidden">
               <div 

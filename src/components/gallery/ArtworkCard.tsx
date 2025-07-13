@@ -203,17 +203,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
         </div>
 
         {/* Compact Print Options - Single Line */}
-        <div className="flex items-center space-x-2 text-xs font-serif text-gray-600">
-          <span>Also available as fine art prints</span>
-          <Link
-            href={`/artwork/${artwork.id}/print`}
-            className="inline-flex items-center space-x-1 bg-red-900 text-white px-2 py-1 text-xs font-serif font-medium hover:bg-red-800 transition-colors rounded"
-          >
-            <ShoppingBag className="h-3 w-3" />
-            <span>Shop Prints</span>
-          </Link>
-          <span>from 450 SEK</span>
-        </div>
+   
       </div>
     </div>
   );

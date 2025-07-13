@@ -473,7 +473,7 @@ export default function Header() {
                     <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
                   </Link>
                   <Link
-                    href="/gallery?type=all-prints"
+                    href="/prints"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
                     onClick={() => setIsShopMenuOpen(false)}
                   >
@@ -481,7 +481,7 @@ export default function Header() {
                     <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
                   </Link>
                   <Link
-                    href="/gallery?type=paper-prints"
+                    href="/prints/paper"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
                     onClick={() => setIsShopMenuOpen(false)}
                   >
@@ -489,7 +489,7 @@ export default function Header() {
                     <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
                   </Link>
                   <Link
-                    href="/gallery?type=canvas-prints"
+                    href="/prints/canvas"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
                     onClick={() => setIsShopMenuOpen(false)}
                   >

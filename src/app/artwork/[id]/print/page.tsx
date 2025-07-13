@@ -1,9 +1,9 @@
-// Updated Print Page - Using WishlistStore for Print Items with Museum Frame
+// Updated Print Page - Detects type from URL parameter
 
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import Image from 'next/image';
@@ -56,15 +56,20 @@ const printTypes = [
 
 export default function ArtworkPrintPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const artworkId = params?.id as string;
+  
+  // Get the type parameter from URL (canvas/paper)
+  const typeParam = searchParams?.get('type');
+  const defaultType = (typeParam === 'canvas' || typeParam === 'paper') ? typeParam : 'paper';
   
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('a3');
-  const [selectedType, setSelectedType] = useState('paper');
+  const [selectedType, setSelectedType] = useState(defaultType); // Use detected type
   const [quantity, setQuantity] = useState(1);
   const [showDetails, setShowDetails] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false); // NEW: Image loading state
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -83,6 +88,13 @@ export default function ArtworkPrintPage() {
   useEffect(() => {
     loadWishlist();
   }, [loadWishlist]);
+
+  // Update selectedType when URL parameter changes
+  useEffect(() => {
+    if (typeParam === 'canvas' || typeParam === 'paper') {
+      setSelectedType(typeParam);
+    }
+  }, [typeParam]);
 
   // Load artwork from Firebase
   useEffect(() => {
