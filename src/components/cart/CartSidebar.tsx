@@ -1,4 +1,4 @@
-// Compact src/components/cart/CartSidebar.tsx - Simple Original/Print Indicators
+// Fixed src/components/cart/CartSidebar.tsx - Preserves Image Aspect Ratios
 
 'use client';
 
@@ -113,11 +113,14 @@ export default function CartSidebar() {
   };
 
   const handleCheckout = async () => {
+    console.log('Starting checkout process...');
     setIsLoading(true);
     setCheckoutError(null);
 
     try {
       const customerEmail = null;
+
+      console.log('Sending checkout request with items:', items);
 
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -130,23 +133,35 @@ export default function CartSidebar() {
         }),
       });
 
+      console.log('Checkout response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Checkout error response:', errorText);
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        } catch (parseError) {
+          throw new Error(`Server error (${response.status}): ${errorText}`);
+        }
       }
 
       const data = await response.json();
+      console.log('Checkout response data:', data);
       
       if (data.url) {
+        console.log('Redirecting to checkout URL:', data.url);
         window.location.href = data.url;
       } else if (data.error) {
         throw new Error(data.error);
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from server');
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      setCheckoutError(error instanceof Error ? error.message : 'Checkout failed. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Checkout failed. Please try again.';
+      setCheckoutError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -222,20 +237,23 @@ export default function CartSidebar() {
                         </div>
                       )}
 
-                      {/* Artwork Image */}
+                      {/* FIXED: Artwork Image with Natural Aspect Ratio */}
                       <Link
                         href={`/artwork/${item.artwork.id}`}
                         onClick={closeCart}
                         className="flex-shrink-0"
                       >
-                        <img
-                          src={item.artwork.imageUrl}
-                          alt={item.artwork.title}
-                          className="w-28 h-36 object-cover hover:opacity-75 transition-opacity rounded"
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
-                          }}
-                        />
+                        <div className="w-20 flex items-center justify-center">
+                          <img
+                            src={item.artwork.imageUrl}
+                            alt={item.artwork.title}
+                            className="max-w-full h-auto max-h-24 hover:opacity-75 transition-opacity rounded object-contain"
+                            style={{ maxWidth: '5rem', maxHeight: '6rem' }}
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMEg1NlY3MEgyNFYzMFoiIGZpbGw9IiNEMUQ1REIiLz4KPC9zdmc+';
+                            }}
+                          />
+                        </div>
                       </Link>
 
                       {/* Item Details */}
@@ -341,7 +359,7 @@ export default function CartSidebar() {
               {/* Error Message */}
               {checkoutError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm font-serif rounded">
-                  {checkoutError}
+                  <strong>Checkout Error:</strong> {checkoutError}
                 </div>
               )}
 

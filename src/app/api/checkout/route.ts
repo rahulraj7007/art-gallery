@@ -1,144 +1,113 @@
+// Fixed /app/api/checkout/route.ts - Works on Vercel
+
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
+  apiVersion: '2024-06-20',
 });
 
 export async function POST(request: NextRequest) {
   try {
     const { items, customerEmail } = await request.json();
 
+    // FIXED: Construct base URL properly for Vercel deployment
+    const baseUrl = getBaseUrl(request);
+    
+    console.log('Checkout API called with baseUrl:', baseUrl);
+    console.log('Items:', items);
+
     if (!items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'No items in cart' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
 
-    // Calculate total and validate items
-    let totalAmount = 0;
-    const lineItems = items.map((item: any) => {
-      const amount = Math.round(item.artwork.price * 100); // Convert to cents
-      totalAmount += amount * item.quantity;
-      
-      return {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.artwork.title,
-            description: `by ${item.artwork.artist} - ${item.artwork.medium}`,
-            images: [item.artwork.imageUrl],
-            metadata: {
-              artworkId: item.artwork.id,
-              artist: item.artwork.artist,
-              medium: item.artwork.medium,
-              dimensions: item.artwork.dimensions,
-            },
+    // Convert cart items to Stripe line items
+    const lineItems = items.map((item: any) => ({
+      price_data: {
+        currency: 'sek',
+        product_data: {
+          name: item.artwork.title,
+          description: `${item.artwork.medium || 'Artwork'} by ${item.artwork.artist}${item.artwork.dimensions ? ` - ${item.artwork.dimensions}` : ''}`,
+          images: item.artwork.imageUrl ? [item.artwork.imageUrl] : [],
+          metadata: {
+            artist: item.artwork.artist,
+            artwork_id: item.artwork.id,
+            category: item.artwork.category || 'original',
+            medium: item.artwork.medium || '',
+            dimensions: item.artwork.dimensions || '',
           },
-          unit_amount: amount,
         },
-        quantity: item.quantity,
-      };
-    });
+        unit_amount: Math.round((item.artwork.price || 0) * 100), // Convert to öre (SEK cents)
+      },
+      quantity: item.quantity,
+    }));
 
-    // Create order record in Firebase (pending status)
-    const orderData = {
-      items: items.map((item: any) => ({
-        artworkId: item.artwork.id,
-        title: item.artwork.title,
-        artist: item.artwork.artist,
-        price: item.artwork.price,
-        quantity: item.quantity,
-        imageUrl: item.artwork.imageUrl,
-      })),
-      totalAmount: totalAmount / 100, // Store in dollars
-      status: 'pending',
-      customerEmail: customerEmail || null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
+    console.log('Line items:', lineItems);
 
-    const orderRef = await addDoc(collection(db, 'orders'), orderData);
-    const orderId = orderRef.id;
-
-    // Create Stripe checkout session
+    // FIXED: Use fully qualified URLs for success and cancel
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      metadata: {
-        orderId: orderId,
-      },
+      success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout/cancelled`,
       customer_email: customerEmail || undefined,
+      metadata: {
+        order_type: 'artwork_purchase',
+        item_count: items.length.toString(),
+      },
       shipping_address_collection: {
-        allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES'],
+        allowed_countries: ['SE', 'NO', 'DK', 'FI', 'DE', 'NL', 'BE', 'FR', 'GB', 'US', 'CA'],
       },
-      billing_address_collection: 'required',
-      phone_number_collection: {
-        enabled: true,
-      },
-      success_url: `${process.env.NEXT_PUBLIC_DOMAIN}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_DOMAIN}/checkout/cancelled?order_id=${orderId}`,
-      automatic_tax: {
-        enabled: true,
-      },
-      shipping_options: [
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 0, // Free shipping
-              currency: 'usd',
-            },
-            display_name: 'Free Standard Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 5,
-              },
-              maximum: {
-                unit: 'business_day',
-                value: 10,
-              },
-            },
-          },
-        },
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 2999, // $29.99 for expedited shipping
-              currency: 'usd',
-            },
-            display_name: 'Expedited Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 2,
-              },
-              maximum: {
-                unit: 'business_day',
-                value: 4,
-              },
-            },
-          },
-        },
-      ],
+      allow_promotion_codes: true,
     });
+
+    console.log('Stripe session created:', session.id);
+    console.log('Session URL:', session.url);
 
     return NextResponse.json({ 
       url: session.url,
-      orderId: orderId 
+      sessionId: session.id 
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Stripe checkout error:', error);
+    
+    // Enhanced error reporting
+    if (error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        { error: `Stripe error: ${error.message}` },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'Error creating checkout session' },
+      { error: error instanceof Error ? error.message : 'Unknown checkout error' },
       { status: 500 }
     );
   }
+}
+
+// FIXED: Helper function to get the correct base URL for any environment
+function getBaseUrl(request: NextRequest): string {
+  // Production Vercel deployment
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Custom domain or NEXT_PUBLIC_SITE_URL
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  
+  // Fallback: Extract from request headers
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'https';
+  
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+  
+  // Final fallback for local development
+  return 'http://localhost:3000';
 }

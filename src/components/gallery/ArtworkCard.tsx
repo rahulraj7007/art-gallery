@@ -1,5 +1,5 @@
-// Updated ArtworkCard Component - src/components/gallery/ArtworkCard.tsx
-// Now using unified wishlist store with helper functions
+// Fixed ArtworkCard Component - Preserves Natural Image Aspect Ratios
+// Updated src/components/gallery/ArtworkCard.tsx
 
 'use client';
 
@@ -103,65 +103,69 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
   return (
     <div className="group">
-      {/* Image Container with Custom Light Frame */}
-      <div className="relative aspect-[4/5] overflow-hidden mb-4">
-        {/* Custom light frame with reduced width */}
-        <div className="relative w-full h-full p-3 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-          {/* Image area */}
-          <div className="relative w-full h-full overflow-hidden">
-            <Link href={`/artwork/${artwork.id}`}>
-              <Image
-                src={artwork.imageUrl}
-                alt={artwork.title}
-                fill
-                className={`object-cover transition-all duration-700 group-hover:scale-[1.02] ${
-                  imageLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                onLoad={() => setImageLoaded(true)}
-              />
-              
-              {/* Loading state */}
-              {!imageLoaded && (
-                <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+      {/* FIXED: Image Container with Natural Aspect Ratio */}
+      <div className="relative mb-4">
+        {/* Custom light frame - now adjusts to image size */}
+        <div className="inline-block">
+          <div className="p-3 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
+            {/* FIXED: Image area - preserves natural aspect ratio */}
+            <div className="relative inline-block overflow-hidden">
+              <Link href={`/artwork/${artwork.id}`}>
+                <Image
+                  src={artwork.imageUrl}
+                  alt={artwork.title}
+                  width={400}
+                  height={500}
+                  className={`transition-all duration-700 group-hover:scale-[1.02] max-w-full h-auto ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  style={{ maxHeight: '60vh', width: 'auto' }}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  onLoad={() => setImageLoaded(true)}
+                />
+                
+                {/* Loading state */}
+                {!imageLoaded && (
+                  <div className="absolute inset-0 bg-gray-100 animate-pulse min-h-[300px] min-w-[240px]" />
+                )}
+
+                {/* Minimal overlay on hover */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
+              </Link>
+
+              {/* Wishlist button - Enhanced with red theme */}
+              <button
+                onClick={handleWishlist}
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                title={artworkInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              >
+                <Heart
+                  className={`h-5 w-5 transition-colors duration-200 ${
+                    artworkInWishlist 
+                      ? 'text-red-900 fill-current' 
+                      : 'text-gray-700 hover:text-red-900'
+                  }`}
+                />
+              </button>
+
+              {/* Minimal availability badge */}
+              {availabilityInfo && (
+                <div className="absolute top-3 left-3">
+                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
+                    {availabilityInfo.label}
+                  </span>
+                </div>
               )}
 
-              {/* Minimal overlay on hover */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
-            </Link>
-
-            {/* Wishlist button - Enhanced with red theme */}
-            <button
-              onClick={handleWishlist}
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
-              title={artworkInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-            >
-              <Heart
-                className={`h-5 w-5 transition-colors duration-200 ${
-                  artworkInWishlist 
-                    ? 'text-red-900 fill-current' 
-                    : 'text-gray-700 hover:text-red-900'
-                }`}
-              />
-            </button>
-
-            {/* Minimal availability badge */}
-            {availabilityInfo && (
-              <div className="absolute top-3 left-3">
-                <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
-                  {availabilityInfo.label}
-                </span>
-              </div>
-            )}
-
-            {/* Out of stock indicator */}
-            {(artwork.availabilityType === 'for-sale' || !artwork.availabilityType) && artwork.inStock === false && (
-              <div className="absolute top-3 left-3">
-                <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
-                  Out of Stock
-                </span>
-              </div>
-            )}
+              {/* Out of stock indicator */}
+              {(artwork.availabilityType === 'for-sale' || !artwork.availabilityType) && artwork.inStock === false && (
+                <div className="absolute top-3 left-3">
+                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
+                    Out of Stock
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -201,9 +205,6 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
             )}
           </div>
         </div>
-
-        {/* Compact Print Options - Single Line */}
-   
       </div>
     </div>
   );

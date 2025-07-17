@@ -1,4 +1,5 @@
-// Updated Print Page - Detects type from URL parameter
+// Fixed Print Page - Preserves Natural Image Aspect Ratios
+// Updated /app/artwork/[id]/print/page.tsx
 
 'use client';
 
@@ -269,30 +270,29 @@ export default function ArtworkPrintPage() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
           
-          {/* UPDATED: Much Larger Product Image with Museum Frame */}
+          {/* FIXED: Product Image with Natural Aspect Ratio */}
           <div className="lg:col-span-4 mr-8">
-            {/* Custom Framed Image - Same as Artwork Page */}
-            <div className="inline-block w-full">
-              <div className="p-4 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300 w-full" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-                <div className="relative inline-block overflow-hidden w-full">
-                  <div className="aspect-[4/5] w-full">
-                    <Image
-                      src={artwork.imageUrl}
-                      alt={artwork.title}
-                      width={1200}
-                      height={1500}
-                      className={`w-full h-full object-cover transition-all duration-700 ${
-                        imageLoaded ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      onLoad={() => setImageLoaded(true)}
-                      priority
-                    />
-                    
-                    {/* Loading state */}
-                    {!imageLoaded && (
-                      <div className="absolute inset-0 bg-gray-100 animate-pulse" />
-                    )}
-                  </div>
+            {/* FIXED: Custom Framed Image - Same as Artwork Page */}
+            <div className="inline-block">
+              <div className="p-4 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
+                <div className="relative inline-block overflow-hidden">
+                  <Image
+                    src={artwork.imageUrl}
+                    alt={artwork.title}
+                    width={600}
+                    height={600}
+                    className={`transition-all duration-700 max-w-full h-auto ${
+                      imageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ maxHeight: '70vh' }}
+                    onLoad={() => setImageLoaded(true)}
+                    priority
+                  />
+                  
+                  {/* Loading state */}
+                  {!imageLoaded && (
+                    <div className="absolute inset-0 bg-gray-100 animate-pulse min-h-[400px]" />
+                  )}
                 </div>
               </div>
             </div>
