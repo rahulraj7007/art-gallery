@@ -1,7 +1,9 @@
-// src/app/layout.tsx - Updated with correct artist name and info
+// src/app/layout.tsx - Updated with Vercel Analytics & Speed Insights
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next'; // NEW: Import Vercel Analytics
+import { SpeedInsights } from '@vercel/speed-insights/next'; // NEW: Import Speed Insights
 import { AuthProvider } from '@/lib/auth/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 
@@ -50,6 +52,8 @@ export default function RootLayout({
             {children}
           </MainLayout>
         </AuthProvider>
+        <Analytics /> {/* NEW: Add Vercel Analytics tracking */}
+        <SpeedInsights /> {/* NEW: Add Speed Insights for performance tracking */}
       </body>
     </html>
   );
