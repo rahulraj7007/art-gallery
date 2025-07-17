@@ -1,4 +1,4 @@
-// Fixed ArtworkCard Component - Preserves Natural Image Aspect Ratios
+// Fixed ArtworkCard Component - Uniform Gallery Grid with Preserved Aspect Ratios
 // Updated src/components/gallery/ArtworkCard.tsx
 
 'use client';
@@ -103,30 +103,42 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
   return (
     <div className="group">
-      {/* FIXED: Image Container with Natural Aspect Ratio */}
+      {/* UPDATED: Uniform Frame Size with Larger Images */}
       <div className="relative mb-4">
-        {/* Custom light frame - now adjusts to image size */}
-        <div className="inline-block">
-          <div className="p-3 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-            {/* FIXED: Image area - preserves natural aspect ratio */}
-            <div className="relative inline-block overflow-hidden">
-              <Link href={`/artwork/${artwork.id}`}>
+        {/* FIXED: Consistent frame dimensions for all artworks */}
+        <div className="w-full h-80">
+          <div 
+            className="p-1 shadow-xl group-hover:shadow-2xl transition-shadow duration-300 w-full h-full" 
+            style={{ 
+              backgroundColor: '#f6dfb3', // Original cream color
+              borderColor: '#e6cfb3',     // Original border color
+              border: '3px solid #e6cfb3' // Explicit uniform border
+            }}
+          >
+            {/* FIXED: Larger images within consistent frame */}
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+              <Link href={`/artwork/${artwork.id}`} className="flex items-center justify-center">
                 <Image
                   src={artwork.imageUrl}
                   alt={artwork.title}
-                  width={400}
-                  height={500}
-                  className={`transition-all duration-700 group-hover:scale-[1.02] max-w-full h-auto ${
+                  width={600}
+                  height={600}
+                  className={`transition-all duration-700 group-hover:scale-[1.02] object-contain ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
-                  style={{ maxHeight: '60vh', width: 'auto' }}
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto'
+                  }}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   onLoad={() => setImageLoaded(true)}
                 />
                 
                 {/* Loading state */}
                 {!imageLoaded && (
-                  <div className="absolute inset-0 bg-gray-100 animate-pulse min-h-[300px] min-w-[240px]" />
+                  <div className="absolute inset-0 bg-gray-100 animate-pulse" />
                 )}
 
                 {/* Minimal overlay on hover */}
@@ -136,7 +148,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
               {/* Wishlist button - Enhanced with red theme */}
               <button
                 onClick={handleWishlist}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
                 title={artworkInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <Heart
@@ -150,7 +162,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
               {/* Minimal availability badge */}
               {availabilityInfo && (
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 z-10">
                   <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
                     {availabilityInfo.label}
                   </span>
@@ -159,7 +171,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
               {/* Out of stock indicator */}
               {(artwork.availabilityType === 'for-sale' || !artwork.availabilityType) && artwork.inStock === false && (
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 z-10">
                   <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
                     Out of Stock
                   </span>

@@ -1,4 +1,4 @@
-// Fixed Print Page - Preserves Natural Image Aspect Ratios
+// Compact Print Page - Dropdown-Based Buying Section
 // Updated /app/artwork/[id]/print/page.tsx
 
 'use client';
@@ -31,26 +31,27 @@ interface Artwork {
 }
 
 const printSizes = [
-  { id: 'a4', name: 'A4', dimensions: '21 x 29.7 cm', inches: '8.3 x 11.7 in', price: 450, popular: false },
-  { id: 'a3', name: 'A3', dimensions: '29.7 x 42 cm', inches: '11.7 x 16.5 in', price: 650, popular: true },
-  { id: 'a2', name: 'A2', dimensions: '42 x 59.4 cm', inches: '16.5 x 23.4 in', price: 950, popular: false },
-  { id: 'a1', name: 'A1', dimensions: '59.4 x 84.1 cm', inches: '23.4 x 33.1 in', price: 1450, popular: false },
-  { id: 'poster', name: 'Large Poster', dimensions: '70 x 100 cm', inches: '27.6 x 39.4 in', price: 1850, popular: false }
+  { id: 'a4', name: 'A4', dimensions: '21 x 29.7 cm', inches: '8.3 x 11.7 in', price: 387, canvasPrice: 966, popular: false },
+  { id: 'a3', name: 'A3', dimensions: '29.7 x 42 cm', inches: '11.7 x 16.5 in', price: 580, canvasPrice: 1545, popular: true },
+  { id: 'a2', name: 'A2', dimensions: '42 x 59.4 cm', inches: '16.5 x 23.4 in', price: 1159, canvasPrice: 2446, popular: false },
+  { id: 'a1', name: 'A1', dimensions: '59.4 x 84.1 cm', inches: '23.4 x 33.1 in', price: 1803, canvasPrice: 3090, popular: false }
 ];
 
 const printTypes = [
   { 
     id: 'paper', 
     name: 'Paper Print',
-    description: '310gsm textured cotton rag, museum-grade archival paper with matte finish',
-    priceMultiplier: 1,
+    description: 'Enhanced Matte Paper',
+    delivery: '7-10 business days',
+    shipping: 'Free shipping',
     popular: true
   },
   { 
     id: 'canvas', 
     name: 'Canvas Print',
-    description: '340gsm artist canvas, poly-cotton with 5cm border for stretching',
-    priceMultiplier: 1.6,
+    description: 'Premium Canvas, 1.25" thick',
+    delivery: '2-3 weeks',
+    shipping: '588 SEK shipping',
     popular: false
   }
 ];
@@ -67,7 +68,7 @@ export default function ArtworkPrintPage() {
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('a3');
-  const [selectedType, setSelectedType] = useState(defaultType); // Use detected type
+  const [selectedType, setSelectedType] = useState(defaultType);
   const [quantity, setQuantity] = useState(1);
   const [showDetails, setShowDetails] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -125,7 +126,10 @@ export default function ArtworkPrintPage() {
 
   const currentSize = printSizes.find(size => size.id === selectedSize);
   const currentType = printTypes.find(type => type.id === selectedType);
-  const currentPrice = Math.round((currentSize?.price || 0) * (currentType?.priceMultiplier || 1));
+  
+  // Calculate price based on type
+  const currentPrice = currentSize ? 
+    (selectedType === 'canvas' ? currentSize.canvasPrice : currentSize.price) : 0;
   
   const printItemId = `${artwork?.id}-print-${selectedSize}-${selectedType}`;
   const wasJustAdded = lastAddedItem === printItemId;
@@ -188,7 +192,7 @@ export default function ArtworkPrintPage() {
           sizeName: currentSize.name,
           type: selectedType,
           typeName: currentType.name,
-          price: currentPrice
+          price: selectedType === 'canvas' ? currentSize.canvasPrice : currentSize.price
         }
       );
       
@@ -270,9 +274,9 @@ export default function ArtworkPrintPage() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
           
-          {/* FIXED: Product Image with Natural Aspect Ratio */}
+          {/* Product Image with Natural Aspect Ratio */}
           <div className="lg:col-span-4 mr-8">
-            {/* FIXED: Custom Framed Image - Same as Artwork Page */}
+            {/* Custom Framed Image - Same as Artwork Page */}
             <div className="inline-block">
               <div className="p-4 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
                 <div className="relative inline-block overflow-hidden">
@@ -322,209 +326,306 @@ export default function ArtworkPrintPage() {
             </div>
           </div>
 
-          {/* Compact Product Details with left margin */}
-          <div className="lg:col-span-3 ml-8 space-y-4">
+          {/* COMPACT BUYING SECTION - Fits in viewport */}
+          <div className="lg:col-span-3 ml-8">
             
-            {/* Header - Price on same line as tax info */}
-            <div>
-              <h1 className="text-3xl font-serif font-light text-gray-900 mb-3">
-                {artwork.title} Fine Art Print
+            {/* Header - Compact */}
+            <div className="mb-6">
+              <h1 className="text-3xl font-serif font-light text-gray-900 mb-2">
+                {artwork.title}
               </h1>
-              <div className="flex items-center space-x-3 text-base font-serif text-gray-600 mb-4">
-                <span>by {artwork.artist}</span>
-                {artwork.year && (
-                  <>
-                    <span>•</span>
-                    <span>{artwork.year}</span>
-                  </>
-                )}
-              </div>
+              <p className="text-lg font-serif text-gray-600 mb-1">
+                Fine Art Print by {artwork.artist}
+              </p>
+              {artwork.year && (
+                <p className="text-sm font-serif text-gray-500">{artwork.year}</p>
+              )}
+            </div>
+
+            {/* COMPACT BUYING FORM */}
+            <div className="space-y-3">
               
-              {/* Price with tax info on same line */}
-              <div className="flex items-center space-x-3 mb-2">
-                <span className="text-2xl font-serif font-medium text-gray-900">
-                  {currentPrice} SEK
-                </span>
-                <span className="text-sm font-serif text-gray-600">
-                  • Tax included. Made to order in Sweden.
-                </span>
-              </div>
-            </div>
-
-            {/* Print Type Selection - Bigger Fonts, Smaller Blocks */}
-            <div>
-              <h3 className="font-serif font-medium text-gray-900 mb-2 text-lg">Print Type</h3>
-              <div className="grid grid-cols-2 gap-3 max-w-lg">
-                {printTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => setSelectedType(type.id)}
-                    className={`p-3 border-2 rounded text-left transition-all ${
-                      selectedType === type.id
-                        ? 'border-red-900 bg-red-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-serif font-bold text-gray-900 text-base">{type.name}</span>
+              {/* Print Type Selection - Compact Buttons */}
+              <div>
+                <h3 className="font-serif font-medium text-gray-900 mb-2 text-lg">Print Type</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {printTypes.map((type) => (
+                    <div key={type.id} className="relative">
                       {type.popular && (
-                        <span className="bg-red-900 text-white text-xs px-2 py-1 rounded font-serif">Popular</span>
+                        <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-red-900 text-white text-xs px-2 py-0.5 rounded font-serif z-10">
+                          Popular
+                        </span>
                       )}
+                      <button
+                        onClick={() => setSelectedType(type.id)}
+                        className={`w-full p-2.5 border-2 rounded-lg text-center transition-all ${
+                          selectedType === type.id
+                            ? 'border-red-900 bg-red-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="font-serif font-medium text-gray-900 text-base">
+                          {type.name}
+                        </span>
+                      </button>
                     </div>
-                    <p className="text-xs font-serif text-gray-600 leading-tight">{type.description}</p>
-                  </button>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Size Selection - Enhanced with Bigger Fonts */}
-            <div>
-              <h3 className="font-serif font-medium text-gray-900 mb-2 text-xl">Size</h3>
-              <div className="grid grid-cols-3 lg:grid-cols-5 gap-2">
-                {printSizes.map((size) => (
-                  <button
-                    key={size.id}
-                    onClick={() => setSelectedSize(size.id)}
-                    className={`w-22 h-22 p-1 ml-2 border-2 rounded text-center transition-all relative ${
-                      selectedSize === size.id
-                        ? 'border-red-900 bg-red-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+              {/* Size & Quantity - Dropdown Layout */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-serif font-medium text-gray-900 mb-1.5 text-base">Size</label>
+                  <select
+                    value={selectedSize}
+                    onChange={(e) => setSelectedSize(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif text-base"
                   >
-                    {size.popular && (
-                      <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs px-1 py-0.5 rounded font-serif">Popular</span>
-                    )}
-                    <div className="flex flex-col justify-center h-full">
-                      <span className="font-serif font-bold text-gray-900 text-base">{size.name}</span>
-                      <span className="font-serif font-bold text-red-900 text-sm">
-                        {Math.round(size.price * (currentType?.priceMultiplier || 1))} SEK
-                      </span>
-                      <p className="text-sm font-serif text-gray-600 leading-none">
-                        {size.dimensions.split(' x ')[0]}×{size.dimensions.split(' x ')[1]}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quantity & Add to Cart - Same Line */}
-            <div className="border-t border-gray-100 pt-4 space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-3">
-                  <label className="text-base font-serif font-medium text-gray-700">
-                    Quantity:
-                  </label>
+                    {printSizes.map((size) => (
+                      <option key={size.id} value={size.id}>
+                        {size.name} - {size.dimensions}{size.popular ? ' (Popular)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block font-serif font-medium text-gray-900 mb-1.5 text-base">Quantity</label>
                   <select
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     disabled={isAdding}
-                    className="w-14 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif text-base disabled:opacity-50"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif text-base disabled:opacity-50"
                   >
                     {[1, 2, 3, 4, 5].map(num => (
                       <option key={num} value={num}>{num}</option>
                     ))}
                   </select>
                 </div>
-
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isAdding}
-                  className={`py-3 px-6 rounded font-serif font-medium text-base transition-all duration-200 flex items-center justify-center space-x-2 ${
-                    wasJustAdded && !isAdding
-                      ? 'bg-green-600 text-white'
-                      : isAdding
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-red-900 text-white hover:bg-red-800'
-                  }`}
-                >
-                  {isAdding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Adding...</span>
-                    </>
-                  ) : wasJustAdded ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      <span>Added!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="h-4 w-4" />
-                      <span>Add to Cart</span>
-                    </>
-                  )}
-                </button>
               </div>
 
+              {/* Price Display - Prominent */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-base font-serif text-gray-600">
+                      {currentType?.name} • {currentSize?.name}
+                    </p>
+                    <p className="text-sm font-serif text-gray-500">
+                      {currentSize?.dimensions}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-serif font-medium text-gray-900">
+                      {currentPrice} SEK
+                    </p>
+                    <p className="text-sm font-serif text-gray-600">
+                      Tax included
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Add to Cart Button - Prominent */}
+              <button
+                onClick={handleAddToCart}
+                disabled={isAdding}
+                className={`w-full py-4 rounded-lg font-serif font-medium text-base transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  wasJustAdded && !isAdding
+                    ? 'bg-green-600 text-white'
+                    : isAdding
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                    : 'bg-red-900 text-white hover:bg-red-800 shadow-sm hover:shadow-md'
+                }`}
+              >
+                {isAdding ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Adding to Cart...</span>
+                  </>
+                ) : wasJustAdded ? (
+                  <>
+                    <Check className="h-5 w-5" />
+                    <span>Added to Cart!</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-5 w-5" />
+                    <span>Add to Cart</span>
+                  </>
+                )}
+              </button>
+
+              {/* Action Buttons After Add to Cart */}
               {wasJustAdded && !isAdding && (
-                <div className="flex justify-start">
+                <div className="flex space-x-3">
                   <button
                     onClick={handleViewCart}
-                    className="py-2 px-4 border-2 border-red-900 text-red-900 font-serif font-medium hover:bg-red-900 hover:text-white transition-colors rounded flex items-center justify-center space-x-2"
+                    className="flex-1 py-3 border-2 border-red-900 text-red-900 font-serif font-medium hover:bg-red-900 hover:text-white transition-colors rounded-lg flex items-center justify-center space-x-2"
                   >
                     <ShoppingBag className="h-4 w-4" />
                     <span>View Cart</span>
                   </button>
-                </div>
-              )}
-
-              {wasJustAdded && !isAdding && (
-                <div className="text-left">
                   <Link
                     href="/gallery"
-                    className="text-sm font-serif text-gray-600 hover:text-red-900 transition-colors"
+                    className="flex-1 py-3 border-2 border-gray-300 text-gray-700 font-serif font-medium hover:bg-gray-50 transition-colors rounded-lg text-center"
                   >
                     Continue Shopping
                   </Link>
                 </div>
               )}
 
-              <div className="text-left">
-                <p className="text-sm font-serif text-gray-600">
-                  Buy with confidence - 30-day return policy
-                </p>
+              {/* Delivery Summary - Compact */}
+              <div className="border-t border-gray-200 pt-3 space-y-1.5">
+                <div className="flex items-center space-x-2 text-base text-gray-600 font-serif">
+                  <Truck className="h-4 w-4" />
+                  <span>
+                    {selectedType === 'canvas' ? 
+                      '2-3 weeks delivery • 588 SEK shipping' : 
+                      '7-10 business days • Free shipping to Sweden'
+                    }
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2 text-base text-gray-600 font-serif">
+                  <Shield className="h-4 w-4" />
+                  <span>30-day quality guarantee • Certificate included</span>
+                </div>
               </div>
 
-              <div className="text-left">
-                <p className="text-sm font-serif text-gray-600">
-                  Enjoy FREE worldwide shipping on orders over 1,500 SEK*
-                </p>
-              </div>
             </div>
 
-            {/* Compact Details Toggle - Bigger Font */}
-            <div className="border-t border-gray-100 pt-4">
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors rounded text-base"
-              >
-                <div className="flex items-center space-x-2">
-                  <Info className="h-5 w-5 text-red-900" />
-                  <span className="font-serif font-medium text-gray-900">Shipping, Quality & Size Details</span>
+            {/* Compact Information Dropdowns - Below main buying section */}
+            <div className="mt-8 space-y-3">
+              
+              {/* Materials & Specifications Dropdown */}
+              <details className="border border-gray-200 rounded-lg">
+                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                  Materials & Specifications
+                </summary>
+                <div className="p-4 pt-0 space-y-4 text-sm font-serif text-gray-700">
+                  <div>
+                    <p className="text-gray-800 leading-relaxed mb-3">
+                      <strong>Paper prints</strong> use museum-quality Enhanced Matte Paper with multicolor, 
+                      water-based inkjet printing technology for brilliant color reproduction.
+                    </p>
+                    <p className="text-gray-800 leading-relaxed">
+                      <strong>Canvas prints</strong> are printed on premium textured, fade-resistant canvas that creates 
+                      gallery-ready artwork with substantial depth and professional presentation.
+                    </p>
+                  </div>
+                  {/*
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Enhanced Matte Paper:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                        <li>Paper weight: 189 g/m²</li>
+                        <li>Paper thickness: 10.3 mil (0.26 mm)</li>
+                        <li>Opacity: 94% (excellent print clarity)</li>
+                        <li>ISO brightness: 104% (vibrant colors)</li>
+                        <li>Sourced from Japan (premium quality)</li>
+                        <li>Multicolor, water-based inkjet printing</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Canvas:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                        <li>Canvas thickness: 1.25″ (3.18 cm)</li>
+                        <li>Fabric weight: 344 g/m² (±25g/m²)</li>
+                        <li>Textured, fade-resistant canvas (OBA-Free)</li>
+                        <li>Hand-glued solid wood stretcher bars</li>
+                        <li>Mounting brackets included - ready to hang</li>
+                        <li>Acid-free, pH-neutral for archival quality</li>
+                      </ul>
+                    </div>
+                  </div>
+                  */}
                 </div>
-                {showDetails ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
+              </details>
 
-              {showDetails && (
-                <div className="p-4 bg-gray-50 rounded-b space-y-3 text-sm font-serif text-gray-700">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Quality</h4>
-                    <p>Paper: 310gsm cotton rag, museum-grade. Canvas: 340gsm artist canvas with 5cm border.</p>
+              {/* Size Guide Dropdown */}
+              <details className="border border-gray-200 rounded-lg">
+                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                  Size Guide & Dimensions
+                </summary>
+                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
+                  <div className="grid grid-cols-1 gap-2">
+                    <p><strong>A4</strong> - 21 x 30 cm (8.3 x 11.7 in)</p>
+                    <p><strong>A3</strong> - 30 x 40 cm (11.7 x 16.5 in)</p>
+                    <p><strong>A2</strong> - 42 x 59.4 cm (16.5 x 23.4 in)</p>
+                    <p><strong>A1</strong> - 59.4 x 84.1 cm (23.4 x 33.1 in)</p>
+                  </div>
+                  <p className="text-gray-600 text-xs border-t pt-2">
+                    <strong>Note:</strong> Paper poster sizes may vary up to 0.4″ (1 cm) due to production specifications.
+                  </p>
+                </div>
+              </details>
+
+              {/* Shipping & Production Dropdown */}
+              <details className="border border-gray-200 rounded-lg">
+                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                  Shipping & Production Times
+                </summary>
+                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Production Times:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                        <li><strong>Enhanced Matte Paper:</strong> 4-5 business days</li>
+                        <li><strong>Canvas prints:</strong> 9-16 business days</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium text-gray-800 mb-2">Shipping to Sweden:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                        <li><strong>Paper prints:</strong> Additional 3-5 days (Free shipping)</li>
+                        <li><strong>Canvas prints:</strong> Additional shipping time (588 SEK shipping cost)</li>
+                      </ul>
+                    </div>
                   </div>
                   
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Shipping</h4>
-                    <p>Paper prints: 3-5 days. Canvas: 1-2 weeks. Free shipping over 1,500 SEK.</p>
+                  <div className="border-t pt-3">
+                    <p className="font-medium text-gray-800 mb-1">Total Delivery Time:</p>
+                    <p className="text-xs text-gray-600">
+                      <strong>Paper prints:</strong> 7-10 business days • 
+                      <strong>Canvas prints:</strong> 2-3 weeks total
+                    </p>
                   </div>
                   
+                  <p className="text-gray-600 text-xs border-t pt-2">
+                    All orders include secure packaging, insured shipping, and tracking information.
+                  </p>
+                </div>
+              </details>
+
+              {/* Quality Guarantee Dropdown */}
+              <details className="border border-gray-200 rounded-lg">
+                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                  Quality Guarantee & Certificate
+                </summary>
+                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
+                  <p>
+                    We guarantee museum-quality prints with premium materials and professional printing technology. 
+                    30-day satisfaction guarantee - if you're not completely happy, we'll make it right.
+                  </p>
+                  
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Production</h4>
-                    <p>Made to order in Sweden. Certificate of authenticity included.</p>
+                    <p className="font-medium text-gray-800 mb-1">What's Included:</p>
+                    <ul className="list-disc ml-4 space-y-1 text-xs">
+                      <li>Certificate of authenticity signed by the artist</li>
+                      <li>Premium print-on-demand with no minimums</li>
+                      <li>Professional secure packaging</li>
+                      <li>Tracking information for all orders</li>
+                      <li>30-day quality guarantee</li>
+                    </ul>
                   </div>
                 </div>
-              )}
+              </details>
+
             </div>
+
           </div>
         </div>
       </div>

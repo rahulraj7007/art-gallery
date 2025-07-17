@@ -1,4 +1,4 @@
-// app/prints/paper/page.tsx - Paper Prints Gallery with Print-Specific Cards
+// app/prints/paper/page.tsx - Paper Prints Gallery with Updated Descriptions
 
 'use client';
 
@@ -27,8 +27,6 @@ interface Artwork {
   collection?: string;
   tags?: string[];
 }
-
-
 
 // Print-specific ArtworkCard for Paper Prints
 function PaperPrintCard({ artwork }: { artwork: Artwork }) {
@@ -64,7 +62,7 @@ function PaperPrintCard({ artwork }: { artwork: Artwork }) {
           sizeName: 'A3',
           type: 'paper',
           typeName: 'Paper Print',
-          price: 650
+          price: 580
         }
       );
       addToWishlist(wishlistItem);
@@ -121,39 +119,28 @@ function PaperPrintCard({ artwork }: { artwork: Artwork }) {
                 Paper Print
               </span>
             </div>
-
-
           </div>
         </div>
       </div>
 
       {/* Print-Specific Content */}
       <div className="space-y-2">
-        {/* Single Line: Print Title • Info • Price */}
+        {/* Single Line: Print Title • Price */}
         <div className="flex items-baseline justify-between space-x-6">
           {/* Left: Print Title */}
-          <Link href={`/artwork/${artwork.id}/print`} className="flex-shrink-0">
+          <Link href={`/artwork/${artwork.id}/print?type=paper`} className="flex-1">
             <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight">
               {artwork.title} Fine Art Print
             </h3>
           </Link>
-
-          {/* Center: Print Info */}
-          <div className="flex-1 text-center">
-            <p className="text-sm font-serif text-gray-600">
-              Paper Print • Museum Quality
-            </p>
-          </div>
           
           {/* Right: Print Price Range */}
           <div className="flex-shrink-0">
             <p className="text-sm font-serif text-gray-900 font-medium">
-              From 450 SEK
+              From 387 SEK
             </p>
           </div>
         </div>
-
-
       </div>
     </div>
   );
@@ -286,16 +273,16 @@ export default function PaperPrintsGallery() {
           <div className="max-w-[1400px] mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               <div>
-                <h3 className="font-serif font-medium text-gray-900 mb-2">Premium Quality</h3>
-                <p className="text-sm font-serif text-gray-600">310gsm cotton rag, museum-grade archival paper</p>
+                <h3 className="font-serif font-medium text-gray-900 mb-2">Enhanced Matte Paper</h3>
+                <p className="text-sm font-serif text-gray-600">Museum-quality paper with multicolor, water-based inkjet printing</p>
               </div>
               <div>
-                <h3 className="font-serif font-medium text-gray-900 mb-2">Fast Shipping</h3>
-                <p className="text-sm font-serif text-gray-600">3-5 business days, free shipping over 1,500 SEK</p>
+                <h3 className="font-serif font-medium text-gray-900 mb-2">Brilliant Colors</h3>
+                <p className="text-sm font-serif text-gray-600">Professional printing technology for brilliant color reproduction</p>
               </div>
               <div>
                 <h3 className="font-serif font-medium text-gray-900 mb-2">Sizes Available</h3>
-                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 450 to 1,450 SEK</p>
+                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 387 to 1,803 SEK</p>
               </div>
             </div>
           </div>
@@ -383,10 +370,10 @@ export default function PaperPrintsGallery() {
                   {zoomedImage.title} Fine Art Print
                 </h3>
                 <p className="text-gray-300 font-serif text-sm mb-2">
-                  Paper Print • Museum Quality
+                  Museum-quality Enhanced Matte Paper with brilliant color reproduction
                 </p>
                 <p className="text-gray-300 font-serif text-sm">
-                  Available in A4, A3, A2, A1 sizes • From 450 SEK
+                  Available in A4, A3, A2, A1 sizes • From 387 SEK
                 </p>
               </div>
             </div>

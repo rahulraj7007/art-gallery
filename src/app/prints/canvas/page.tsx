@@ -1,4 +1,4 @@
-// app/prints/canvas/page.tsx - Canvas Prints Gallery with Print-Specific Cards
+// app/prints/canvas/page.tsx - Canvas Prints Gallery with Updated Descriptions
 
 'use client';
 
@@ -27,8 +27,6 @@ interface Artwork {
   collection?: string;
   tags?: string[];
 }
-
-
 
 // Print-specific ArtworkCard for Canvas Prints
 function CanvasPrintCard({ artwork }: { artwork: Artwork }) {
@@ -64,7 +62,7 @@ function CanvasPrintCard({ artwork }: { artwork: Artwork }) {
           sizeName: 'A3',
           type: 'canvas',
           typeName: 'Canvas Print',
-          price: 1040
+          price: 1545
         }
       );
       addToWishlist(wishlistItem);
@@ -121,39 +119,28 @@ function CanvasPrintCard({ artwork }: { artwork: Artwork }) {
                 Canvas Print
               </span>
             </div>
-
-
           </div>
         </div>
       </div>
 
       {/* Print-Specific Content */}
       <div className="space-y-2">
-        {/* Single Line: Print Title • Info • Price */}
+        {/* Single Line: Print Title • Price */}
         <div className="flex items-baseline justify-between space-x-6">
           {/* Left: Print Title */}
-          <Link href={`/artwork/${artwork.id}/print`} className="flex-shrink-0">
+          <Link href={`/artwork/${artwork.id}/print?type=canvas`} className="flex-1">
             <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight">
               {artwork.title} Canvas Print
             </h3>
           </Link>
-
-          {/* Center: Print Info */}
-          <div className="flex-1 text-center">
-            <p className="text-sm font-serif text-gray-600">
-              Canvas Print • Gallery Quality
-            </p>
-          </div>
           
           {/* Right: Print Price Range */}
           <div className="flex-shrink-0">
             <p className="text-sm font-serif text-gray-900 font-medium">
-              From 720 SEK
+              From 966 SEK
             </p>
           </div>
         </div>
-
-
       </div>
     </div>
   );
@@ -286,16 +273,16 @@ export default function CanvasPrintsGallery() {
           <div className="max-w-[1400px] mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               <div>
-                <h3 className="font-serif font-medium text-gray-900 mb-2">Premium Quality</h3>
-                <p className="text-sm font-serif text-gray-600">340gsm artist canvas, poly-cotton with 5cm border</p>
+                <h3 className="font-serif font-medium text-gray-900 mb-2">Premium Canvas</h3>
+                <p className="text-sm font-serif text-gray-600">Premium textured, fade-resistant canvas with substantial depth</p>
               </div>
               <div>
-                <h3 className="font-serif font-medium text-gray-900 mb-2">Fast Shipping</h3>
-                <p className="text-sm font-serif text-gray-600">1-2 weeks, free shipping over 1,500 SEK</p>
+                <h3 className="font-serif font-medium text-gray-900 mb-2">Gallery-Ready</h3>
+                <p className="text-sm font-serif text-gray-600">Professional presentation with 1.25" thick stretcher bars</p>
               </div>
               <div>
                 <h3 className="font-serif font-medium text-gray-900 mb-2">Sizes Available</h3>
-                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 720 to 2,320 SEK</p>
+                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 966 to 3,090 SEK</p>
               </div>
             </div>
           </div>
@@ -383,10 +370,10 @@ export default function CanvasPrintsGallery() {
                   {zoomedImage.title} Canvas Print
                 </h3>
                 <p className="text-gray-300 font-serif text-sm mb-2">
-                  Canvas Print • Gallery Quality
+                  Premium textured canvas with professional presentation
                 </p>
                 <p className="text-gray-300 font-serif text-sm">
-                  Available in A4, A3, A2, A1 sizes • From 720 SEK
+                  Available in A4, A3, A2, A1 sizes • From 966 SEK
                 </p>
               </div>
             </div>
