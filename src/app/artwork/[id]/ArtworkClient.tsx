@@ -1,5 +1,3 @@
-// Fixed ArtworkClient with proper image sizing
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,20 +8,23 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Toast from '@/components/ui/Toast';
 
+// Import the Room Gallery component
+import ArtworkRoomGallery from '@/components/gallery/ArtworkRoomGallery';
+
 // Updated interface to match your flexible artwork system
 interface Artwork {
   id: string;
   title: string;
   artist: string;
-  price?: number; // Optional for enquire-only pieces
+  price?: number;
   imageUrl: string;
-  description?: string; // Optional
-  medium?: string; // Optional
-  dimensions?: string; // Optional
-  category?: string; // Optional
-  year?: number; // Optional
+  description?: string;
+  medium?: string;
+  dimensions?: string;
+  category?: string;
+  year?: number;
   availabilityType?: 'for-sale' | 'enquire-only' | 'exhibition' | 'commissioned' | 'sold';
-  inStock?: boolean; // Optional
+  inStock?: boolean;
 }
 
 interface ArtworkClientProps {
@@ -80,12 +81,11 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
   // Enhanced handleAddToCart with feedback
   const handleAddToCart = () => {
     if (availabilityType === 'for-sale' && artwork.price) {
-      // Convert flexible artwork to cart-compatible format (keeping your exact structure)
       const cartArtwork = {
         id: artwork.id,
         title: artwork.title,
         artist: artwork.artist,
-        price: artwork.price, // TypeScript now knows this exists due to the check above
+        price: artwork.price,
         imageUrl: artwork.imageUrl,
         description: artwork.description || '',
         medium: artwork.medium || '',
@@ -96,24 +96,19 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
       };
       
       addItem(cartArtwork, quantity);
-      
-      // Show success toast
       setToastMessage(`"${artwork.title}" added to cart!`);
       setShowToast(true);
       
-      // Clear last added after showing toast
       setTimeout(() => {
         clearLastAdded();
       }, 3000);
     }
   };
 
-  // Handle view cart
   const handleViewCart = () => {
     openCart();
   };
 
-  // Check if this item was just added
   const wasJustAdded = lastAddedItem === artwork.id;
 
   const handleContactInquiry = () => {
@@ -121,10 +116,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
     const body = `Hello Aja,\n\nI'm interested in learning more about "${artwork.title}"${artwork.year ? ` (${artwork.year})` : ''}.\n\nThank you for your time.\n\nBest regards`;
     
     try {
-      // Try mailto first
       const mailtoLink = `mailto:ajaeriksson@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      
-      // Create a temporary link and click it
       const link = document.createElement('a');
       link.href = mailtoLink;
       link.target = '_blank';
@@ -132,13 +124,10 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
       link.click();
       document.body.removeChild(link);
       
-      // Show confirmation toast
       setToastMessage('Opening your email client...');
       setShowToast(true);
-      
     } catch (error) {
       console.error('Error opening email:', error);
-      // Fallback: copy email to clipboard and show instructions
       navigator.clipboard.writeText('ajaeriksson@gmail.com').then(() => {
         setToastMessage('Email address copied to clipboard!');
         setShowToast(true);
@@ -154,11 +143,9 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
     if (!artwork) return;
     
     if (isWishlisted) {
-      // Remove from wishlist
       removeFromWishlist(artwork.id);
       setToastMessage('Removed from wishlist');
     } else {
-      // Add to wishlist using helper function
       const wishlistItem = createOriginalWishlistItem({
         id: artwork.id,
         title: artwork.title,
@@ -183,7 +170,6 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
       url: window.location.href
     };
 
-    // Try native share API first (mobile devices)
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -191,18 +177,15 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
         setShowToast(true);
         return;
       } catch (error) {
-        // User cancelled sharing or error occurred
         console.log('Share cancelled or failed');
       }
     }
 
-    // Fallback: Copy to clipboard
     try {
       await navigator.clipboard.writeText(window.location.href);
       setToastMessage('Link copied to clipboard!');
       setShowToast(true);
     } catch (error) {
-      // Final fallback: Show share options
       setToastMessage('Use your browser\'s share button to share this page');
       setShowToast(true);
     }
@@ -271,51 +254,116 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
-            {/* FIXED: Image Section with Better Sizing */}
+            {/* Image Section with Dark Wood Frame - Matching Gallery Cards */}
             <div className="lg:col-span-4 space-y-6">
-              {/* FIXED: Better sized image container */}
+              {/* Dark Wood Framed Image - Exactly like ArtworkCard */}
               <div className="relative group">
-                <div className="p-3 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300 w-fit" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-                  <div className="relative overflow-hidden">
-                    <Image
-                      src={artwork.imageUrl}
-                      alt={artwork.title}
-                      width={600}
-                      height={600}
-                      className={`transition-all duration-700 group-hover:scale-[1.02] object-contain ${
-                        imageLoaded ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      style={{ 
-                        maxWidth: '100%',
-                        maxHeight: '500px', // FIXED: Reduced from 80vh to 500px
-                        height: 'auto',
-                        userSelect: 'none',
-                        WebkitUserDrag: 'none',
-                        pointerEvents: 'none'
-                      }}
-                      onLoad={() => setImageLoaded(true)}
-                      onContextMenu={(e) => e.preventDefault()}
-                      draggable={false}
-                      priority
-                    />
-                    
-                    {/* Loading state */}
-                    {!imageLoaded && (
-                      <div className="absolute inset-0 bg-gray-100 animate-pulse min-h-[400px]" />
-                    )}
-
-                    {/* Invisible overlay to prevent image interactions */}
+                {/* Main frame container - responsive size */}
+                <div className="w-full max-w-2xl mx-auto">
+                  <div 
+                    className="w-full aspect-square relative transition-all duration-300"
+                    style={{
+                      background: 'linear-gradient(135deg, #2d2622 0%, #1a1714 15%, #2d2622 30%, #1a1714 45%, #2d2622 60%, #1a1714 75%, #2d2622 100%)',
+                      padding: '1px',
+                      borderRadius: '2px',
+                      border: '0.2px solid #1a1714',
+                      boxShadow: `
+                        0 4px 8px rgba(0, 0, 0, 0.15),
+                        0 8px 16px rgba(0, 0, 0, 0.1),
+                        0 16px 32px rgba(0, 0, 0, 0.05),
+                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
+                      `,
+                      transform: 'translateZ(0)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `
+                        0 6px 12px rgba(0, 0, 0, 0.2),
+                        0 12px 24px rgba(0, 0, 0, 0.15),
+                        0 24px 48px rgba(0, 0, 0, 0.1),
+                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
+                      `;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = `
+                        0 4px 8px rgba(0, 0, 0, 0.15),
+                        0 8px 16px rgba(0, 0, 0, 0.1),
+                        0 16px 32px rgba(0, 0, 0, 0.05),
+                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
+                      `;
+                    }}
+                  >
+                    {/* Inner frame detail */}
                     <div 
-                      className="absolute inset-0 bg-transparent"
-                      onContextMenu={(e) => e.preventDefault()}
-                      onDragStart={(e) => e.preventDefault()}
-                      style={{ userSelect: 'none' }}
-                    />
+                      className="w-full h-full relative"
+                      style={{
+                        background: 'linear-gradient(135deg, #1a1714 0%, #2d2622 50%, #1a1714 100%)',
+                        padding: '1px',
+                        borderRadius: '1px'
+                      }}
+                    >
+                      {/* Image container - NO WHITE SPACES */}
+                      <div 
+                        className="w-full h-full bg-white relative overflow-hidden"
+                        style={{ 
+                          borderRadius: '1px',
+                          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <Image
+                          src={artwork.imageUrl}
+                          alt={artwork.title}
+                          fill
+                          className={`transition-all duration-700 group-hover:scale-[1.02] object-cover ${
+                            imageLoaded ? 'opacity-100' : 'opacity-0'
+                          }`}
+                          style={{ 
+                            userSelect: 'none',
+                            WebkitUserDrag: 'none',
+                            pointerEvents: 'none'
+                          }}
+                          onLoad={() => setImageLoaded(true)}
+                          onContextMenu={(e) => e.preventDefault()}
+                          draggable={false}
+                          priority
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                        
+                        {/* Loading state */}
+                        {!imageLoaded && (
+                          <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                        )}
+
+                        {/* Invisible overlay to prevent image interactions */}
+                        <div 
+                          className="absolute inset-0 bg-transparent"
+                          onContextMenu={(e) => e.preventDefault()}
+                          onDragStart={(e) => e.preventDefault()}
+                          style={{ userSelect: 'none' }}
+                        />
+
+                        {/* Wishlist button overlay */}
+                        <button
+                          onClick={handleWishlist}
+                          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
+                          title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                        >
+                          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
+                            <Heart
+                              className={`h-4 w-4 transition-colors duration-200 ${
+                                isWishlisted 
+                                  ? 'text-red-900 fill-current' 
+                                  : 'text-gray-700 hover:text-red-900'
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Artwork Info */}
+              {/* Artwork Technical Info */}
               <div className="space-y-3 text-sm font-serif text-gray-600">
                 {artwork.medium && (
                   <p><span className="font-medium">Medium:</span> {artwork.medium}</p>
@@ -369,7 +417,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
               <div className="space-y-6">
                 {availabilityType === 'for-sale' && artwork.price && artwork.inStock !== false ? (
                   <div className="space-y-4">
-                    {/* Quantity Selector - Only show for for-sale items */}
+                    {/* Quantity Selector */}
                     <div className="flex items-center space-x-4">
                       <label htmlFor="quantity" className="text-sm font-serif font-medium text-gray-700">
                         Quantity:
@@ -390,7 +438,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                     </div>
 
                     <div className="flex space-x-4">
-                      {/* Enhanced Add to Cart Button - Red Theme */}
+                      {/* Add to Cart Button - Red Theme */}
                       <button
                         onClick={handleAddToCart}
                         disabled={isAdding}
@@ -420,7 +468,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                         )}
                       </button>
 
-                      {/* View Cart Button - Red Theme */}
+                      {/* View Cart Button */}
                       {wasJustAdded && !isAdding && (
                         <button
                           onClick={handleViewCart}
@@ -429,17 +477,6 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                           View Cart
                         </button>
                       )}
-
-                      <button
-                        onClick={handleWishlist}
-                        className={`p-4 transition-colors ${
-                          isWishlisted
-                            ? 'bg-red-900 text-white'
-                            : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                      </button>
 
                       <button
                         onClick={handleShare}
@@ -461,17 +498,6 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                       </button>
 
                       <div className="flex space-x-4">
-                        <button
-                          onClick={handleWishlist}
-                          className={`flex-1 p-4 transition-colors ${
-                            isWishlisted
-                              ? 'bg-red-900 text-white'
-                              : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Heart className={`h-5 w-5 mx-auto ${isWishlisted ? 'fill-current' : ''}`} />
-                        </button>
-
                         <button
                           onClick={handleShare}
                           className="flex-1 p-4 border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
@@ -636,7 +662,15 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
             </div>
           </div>
 
-          {/* Print Options Section - Enhanced */}
+          {/* Room Gallery Section - See It In Your Space */}
+          <div className="mt-20 border-t border-gray-100 pt-16">
+            <ArtworkRoomGallery 
+              artworkImageUrl={artwork.imageUrl}
+              artworkTitle={artwork.title}
+            />
+          </div>
+
+          {/* Print Options Section */}
           <div className="mt-20 border-t border-gray-100 pt-16">
             <div className="bg-gray-50 rounded-lg p-8 lg:p-12">
               <div className="max-w-4xl">
@@ -657,20 +691,24 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                       <span className="bg-red-900 text-white text-xs px-3 py-1 rounded font-serif">Popular</span>
                     </div>
                     <p className="text-sm font-serif text-gray-600 mb-6">
-                      310gsm textured cotton rag, museum-grade archival paper with matte finish
+                      Enhanced Matte Paper with multicolor, water-based inkjet printing
                     </p>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A4 (21 x 29.7 cm)</span>
-                        <span className="text-gray-900 font-medium">450 SEK</span>
+                        <span className="text-gray-900 font-medium">387 SEK</span>
                       </div>
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A3 (29.7 x 42 cm)</span>
-                        <span className="text-gray-900 font-medium">650 SEK</span>
+                        <span className="text-gray-900 font-medium">580 SEK</span>
                       </div>
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A2 (42 x 59.4 cm)</span>
-                        <span className="text-gray-900 font-medium">950 SEK</span>
+                        <span className="text-gray-900 font-medium">1,159 SEK</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-serif">
+                        <span className="text-gray-600">A1 (59.4 x 84.1 cm)</span>
+                        <span className="text-gray-900 font-medium">1,803 SEK</span>
                       </div>
                     </div>
                   </div>
@@ -679,20 +717,24 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                   <div className="bg-white rounded-lg p-6 border border-gray-200 hover:border-gray-300 transition-colors">
                     <h4 className="text-xl font-serif font-medium text-gray-900 mb-4">Canvas Prints</h4>
                     <p className="text-sm font-serif text-gray-600 mb-6">
-                      340gsm artist canvas, poly-cotton with 5cm border for stretching
+                      Premium textured canvas with professional presentation
                     </p>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A4 (21 x 29.7 cm)</span>
-                        <span className="text-gray-900 font-medium">720 SEK</span>
+                        <span className="text-gray-900 font-medium">966 SEK</span>
                       </div>
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A3 (29.7 x 42 cm)</span>
-                        <span className="text-gray-900 font-medium">1,040 SEK</span>
+                        <span className="text-gray-900 font-medium">1,545 SEK</span>
                       </div>
                       <div className="flex justify-between text-sm font-serif">
                         <span className="text-gray-600">A2 (42 x 59.4 cm)</span>
-                        <span className="text-gray-900 font-medium">1,520 SEK</span>
+                        <span className="text-gray-900 font-medium">2,446 SEK</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-serif">
+                        <span className="text-gray-600">A1 (59.4 x 84.1 cm)</span>
+                        <span className="text-gray-900 font-medium">3,090 SEK</span>
                       </div>
                     </div>
                   </div>
@@ -712,66 +754,19 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                         <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                         </div>
-                        <span>Free shipping over 200 EUR</span>
+                        <span>7-10 business days delivery</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                         </div>
-                        <span>30-day return policy</span>
+                        <span>30-day quality guarantee</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 bg-purple-100 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                         </div>
-                        <span>Certificate of authenticity included</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Artist Bio Section */}
-          <div className="mt-20 border-t border-gray-100 pt-16">
-            <div className="bg-white">
-              <div className="max-w-4xl">
-                <h3 className="text-3xl font-serif font-light text-gray-900 mb-8">
-                  Aja Eriksson von Weissenberg
-                </h3>
-                
-                <div className="prose prose-lg max-w-none font-serif text-gray-700 leading-relaxed">
-                  <p>
-                    Contemporary oil painter exploring Nordic themes through color and texture.
-                  </p>
-                  <p className="mt-4">
-                    <strong>Contact:</strong> ajaeriksson@gmail.com<br />
-                    <strong>Location:</strong> Göteborg, Sweden
-                  </p>
-                </div>
-
-                <div className="mt-12 pt-8 border-t border-gray-100">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h4 className="text-lg font-serif font-medium text-gray-900 mb-4">Gallery</h4>
-                      <div className="space-y-2 text-sm font-serif text-gray-600">
-                        <div><Link href="/gallery" className="text-red-900 hover:text-red-700">View All Works</Link></div>
-                        <div><Link href="/gallery?type=originals" className="text-red-900 hover:text-red-700">Original Paintings</Link></div>
-                        <div><Link href="/about" className="text-red-900 hover:text-red-700">About the Artist</Link></div>
-                        <div><Link href="/contact" className="text-red-900 hover:text-red-700">Contact & Commissions</Link></div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-lg font-serif font-medium text-gray-900 mb-4">Current Exhibition</h4>
-                      <div className="text-sm font-serif text-gray-600">
-                        <p className="font-medium">"Echoes of the North"</p>
-                        <p>Galleri Anna H, Göteborg</p>
-                        <p>Through August 2025</p>
-                        <p className="mt-4">
-                          <a href="#" className="text-red-900 hover:text-red-700">Follow on Instagram</a>
-                        </p>
+                        <span>Certificate included</span>
                       </div>
                     </div>
                   </div>

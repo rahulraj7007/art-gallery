@@ -213,9 +213,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                 <div className="absolute inset-0 bg-black bg-opacity-5"></div>
               </div>
 
-              {/* Dynamic Artwork Overlay */}
+              {/* Dynamic Artwork Overlay - NO WHITE MAT */}
               <div 
-                className="absolute border-3 border-gray-900 bg-white p-1.5 shadow-2xl transform hover:scale-105 transition-all duration-300 z-10"
+                className="absolute border-2 border-gray-800 shadow-2xl transform hover:scale-105 transition-all duration-300 z-10 overflow-hidden"
                 style={{
                   top: currentArtworkPosition.top,
                   left: currentArtworkPosition.left,
@@ -224,16 +224,13 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                   boxShadow: '0 8px 25px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1)'
                 }}
               >
-                <div className="w-full h-full relative overflow-hidden">
-                  <Image
-                    src={artworkImageUrl}
-                    alt={artworkTitle}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 30vw"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+                <Image
+                  src={artworkImageUrl}
+                  alt={artworkTitle}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 30vw"
+                />
               </div>
 
               {/* Navigation Arrows */}
@@ -299,9 +296,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                     <div className="absolute inset-0 bg-black bg-opacity-10"></div>
                   </div>
 
-                  {/* Small Artwork with Dynamic Positioning */}
+                  {/* Small Artwork with Dynamic Positioning - NO WHITE MAT */}
                   <div 
-                    className="absolute border border-gray-800 bg-white p-0.5 shadow-md z-10"
+                    className="absolute border border-gray-800 shadow-md z-10 overflow-hidden"
                     style={{
                       top: thumbnailPosition.top,
                       left: thumbnailPosition.left,
@@ -309,15 +306,13 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                       height: thumbnailPosition.height,
                     }}
                   >
-                    <div className="w-full h-full relative overflow-hidden">
-                      <Image
-                        src={artworkImageUrl}
-                        alt={artworkTitle}
-                        fill
-                        className="object-cover"
-                        sizes="50px"
-                      />
-                    </div>
+                    <Image
+                      src={artworkImageUrl}
+                      alt={artworkTitle}
+                      fill
+                      className="object-cover"
+                      sizes="50px"
+                    />
                   </div>
 
                   {/* Room Type Label */}
@@ -355,9 +350,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
               </p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h4 className="font-serif font-medium text-gray-900 mb-2">True to Scale</h4>
+              <h4 className="font-serif font-medium text-gray-900 mb-2">Complete Artwork</h4>
               <p className="text-sm font-serif text-gray-600">
-                Portrait, landscape, and square artworks each get optimal placement for maximum impact.
+                The entire artwork is always visible, preserving the original aspect ratio and artistic composition.
               </p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -394,9 +389,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                 <div className="absolute inset-0 bg-black bg-opacity-5"></div>
               </div>
 
-              {/* Artwork Overlay with Dynamic Positioning */}
+              {/* Artwork Overlay with Dynamic Positioning - NO WHITE MAT */}
               <div 
-                className="absolute border-4 border-gray-900 bg-white p-2 shadow-2xl z-10"
+                className="absolute border-4 border-gray-900 shadow-2xl z-10 overflow-hidden"
                 style={{
                   top: currentArtworkPosition.top,
                   left: currentArtworkPosition.left,
@@ -405,16 +400,13 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                   boxShadow: '0 12px 35px rgba(0,0,0,0.2)'
                 }}
               >
-                <div className="w-full h-full relative overflow-hidden">
-                  <Image
-                    src={artworkImageUrl}
-                    alt={artworkTitle}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+                <Image
+                  src={artworkImageUrl}
+                  alt={artworkTitle}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
               </div>
             </div>
 
