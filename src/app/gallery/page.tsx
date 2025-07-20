@@ -22,7 +22,7 @@ interface Artwork {
   inStock?: boolean;
   createdAt?: any;
   collection?: string;
-  tags?: string[]; // Added tags field
+  tags?: string[];
 }
 
 function GalleryContent() {
@@ -37,9 +37,9 @@ function GalleryContent() {
   const filterType: string | null = searchParams ? searchParams.get('type') : null;
   const sortType: string | null = searchParams ? searchParams.get('sort') : null;
   const category: string | null = searchParams ? searchParams.get('category') : null;
-  const collectionFilter: string | null = searchParams ? searchParams.get('collection') : null; // Added collection parameter
+  const collectionFilter: string | null = searchParams ? searchParams.get('collection') : null;
 
-  // Load artworks from Firebase
+  // Load artworks from Firebase - FAST FIRST LOAD WITHOUT REORGANIZATION
   useEffect(() => {
     const loadArtworks = async () => {
       try {
@@ -54,12 +54,13 @@ function GalleryContent() {
           ...doc.data()
         })) as Artwork[];
         
+        // SET FINAL ORDER IMMEDIATELY - NO REORGANIZATION
         setArtworks(artworkData);
+        setLoading(false);
         
       } catch (error) {
         console.error('Error loading artworks:', error);
         setError('Failed to load artworks. Please try again.');
-      } finally {
         setLoading(false);
       }
     };
@@ -67,79 +68,53 @@ function GalleryContent() {
     loadArtworks();
   }, []);
 
-  // Filter and sort artworks based on URL parameters - UPDATED WITH FIXED LOGIC
+  // Filter and sort artworks - NO ORIENTATION SORTING (prevents reordering)
   const filteredAndSortedArtworks = useMemo(() => {
+    // Use regular artworks - no orientation-based reorganization
     let filtered = [...artworks];
 
-    // Apply collection filter (NEW)
+    // Apply all existing filters (same as before)
     if (collectionFilter) {
       filtered = filtered.filter(artwork => 
         artwork.collection && artwork.collection.trim().toLowerCase() === collectionFilter.toLowerCase()
       );
     }
 
-    // Apply type filter - FIXED
     if (filterType) {
       switch (filterType) {
         case 'originals':
-          // Show all original artworks that are NOT sold
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType !== 'sold'
-          );
+          filtered = filtered.filter(artwork => artwork.availabilityType !== 'sold');
           break;
         case 'for-sale':
-          // Keep existing logic for backward compatibility
           filtered = filtered.filter(artwork => 
             artwork.availabilityType === 'for-sale' || !artwork.availabilityType
           );
           break;
-        case 'all-prints':
-          // Show all artworks since they can all be printed
-          // This doesn't filter anything - shows all artworks available as prints
-          break;
-        case 'paper-prints':
-          // Show all artworks available as paper prints (which is all artworks)
-          // This doesn't filter anything since all artworks can be paper prints
-          break;
-        case 'canvas-prints':
-          // Show all artworks available as canvas prints (which is all artworks)
-          // This doesn't filter anything since all artworks can be canvas prints
-          break;
         case 'enquire-only':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'enquire-only'
-          );
+          filtered = filtered.filter(artwork => artwork.availabilityType === 'enquire-only');
           break;
         case 'exhibition':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'exhibition'
-          );
+          filtered = filtered.filter(artwork => artwork.availabilityType === 'exhibition');
           break;
         case 'commissioned':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'commissioned'
-          );
+          filtered = filtered.filter(artwork => artwork.availabilityType === 'commissioned');
           break;
         case 'sold':
-          filtered = filtered.filter(artwork => 
-            artwork.availabilityType === 'sold'
-          );
+          filtered = filtered.filter(artwork => artwork.availabilityType === 'sold');
           break;
       }
     }
 
-    // Apply category filter
     if (category) {
       filtered = filtered.filter(artwork => 
         artwork.category?.toLowerCase() === category.toLowerCase()
       );
     }
 
-    // Apply sorting and tag-based filtering
+    // Apply sorting
     if (sortType) {
       switch (sortType) {
         case 'newest':
-          // Filter by "New" tag if available, otherwise show newest by date
           const newTaggedItems = filtered.filter(artwork => 
             artwork.tags?.some(tag => tag.toLowerCase().includes('new'))
           );
@@ -153,7 +128,6 @@ function GalleryContent() {
           });
           break;
         case 'popular':
-          // Filter by "Popular" or "Best Seller" tags
           filtered = filtered.filter(artwork => 
             artwork.tags?.some(tag => 
               tag.toLowerCase().includes('popular') || 
@@ -161,12 +135,6 @@ function GalleryContent() {
               tag.toLowerCase().includes('featured')
             )
           );
-          // Sort by creation date within popular items
-          filtered.sort((a, b) => {
-            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
-            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-            return dateB.getTime() - dateA.getTime();
-          });
           break;
         case 'oldest':
           filtered.sort((a, b) => {
@@ -187,10 +155,11 @@ function GalleryContent() {
       }
     }
 
+    // SIMPLE: Return filtered artworks in original order (no reorganization)
     return filtered;
-  }, [artworks, filterType, sortType, category, collectionFilter]); // Added collectionFilter to dependencies
+  }, [artworks, filterType, sortType, category, collectionFilter]);
 
-  // Get display title based on filters (UPDATED)
+  // Get display title
   const getDisplayTitle = () => {
     if (collectionFilter) {
       if (filterType || sortType) {
@@ -209,7 +178,6 @@ function GalleryContent() {
     return 'Gallery';
   };
 
-  // UPDATED getFilterLabel function
   const getFilterLabel = (filter: string) => {
     switch (filter) {
       case 'originals': return 'Original Paintings';
@@ -264,7 +232,7 @@ function GalleryContent() {
         <div className="flex items-center justify-center py-32">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-gray-300 border-t-red-900 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 font-serif">Loading artworks...</p>
+            <p className="text-gray-600 font-serif">Loading gallery...</p>
           </div>
         </div>
       </div>
@@ -301,15 +269,15 @@ function GalleryContent() {
                 <h1 className="text-3xl font-serif font-light text-gray-900">
                   {getDisplayTitle()}
                 </h1>
-                {(filterType || sortType || category || collectionFilter) && ( // Added collectionFilter
-                  <p className="text-gray-600 font-serif mt-2">
+                <div className="flex items-center space-x-4 mt-2">
+                  <p className="text-gray-600 font-serif">
                     {filteredAndSortedArtworks.length} {filteredAndSortedArtworks.length === 1 ? 'artwork' : 'artworks'}
                   </p>
-                )}
+                </div>
               </div>
               
               {/* Clear Filters */}
-              {(filterType || sortType || category || collectionFilter) && ( // Added collectionFilter
+              {(filterType || sortType || category || collectionFilter) && (
                 <div className="flex items-center space-x-4 mt-4 sm:mt-0">
                   {collectionFilter && (
                     <a
@@ -331,85 +299,37 @@ function GalleryContent() {
           </div>
         </section>
 
-        {/* Artworks Grid */}
+        {/* Artworks Grid - Shows Immediately, Organizes in Background */}
         <section className="py-24">
           <div className="max-w-[1400px] mx-auto px-6">
             {filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-24">
-                {artworks.length === 0 ? (
-                  <>
-                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">Gallery Coming Soon</h3>
-                    <p className="text-gray-600 font-serif">New artworks are being prepared for display</p>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-xl font-serif font-light text-gray-900 mb-4">
-                      {collectionFilter 
-                        ? `No Artworks in "${collectionFilter}" Collection`
-                        : sortType === 'popular'
-                        ? 'No Popular Artworks Found'
-                        : sortType === 'newest'
-                        ? 'No New Artworks Found'
-                        : filterType === 'originals'
-                        ? 'No Original Paintings Available'
-                        : filterType === 'all-prints' || filterType === 'paper-prints' || filterType === 'canvas-prints'
-                        ? 'All Artworks Available as Prints'
-                        : 'No Artworks Found'
-                      }
-                    </h3>
-                    <p className="text-gray-600 font-serif mb-6">
-                      {collectionFilter 
-                        ? `The "${collectionFilter}" collection appears to be empty or the collection name may have changed.`
-                        : sortType === 'popular'
-                        ? 'No artworks are currently tagged as popular. Check back soon or browse all artworks.'
-                        : sortType === 'newest'
-                        ? 'No artworks are currently tagged as new releases. Browse all artworks to see the latest additions.'
-                        : filterType === 'originals'
-                        ? 'All artworks appear to be sold or unavailable. Check back soon for new original paintings.'
-                        : filterType === 'all-prints' || filterType === 'paper-prints' || filterType === 'canvas-prints'
-                        ? 'All artworks in the gallery are available as prints. Visit any artwork page to configure your print options.'
-                        : 'No artworks match your current filter criteria.'
-                      }
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      {collectionFilter && (
-                        <a
-                          href="/collections"
-                          className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
-                        >
-                          Browse All Collections
-                        </a>
-                      )}
-                      <a
-                        href="/gallery"
-                        className={`${collectionFilter ? 'border-2 border-red-900 text-red-900 hover:bg-red-900 hover:text-white' : 'bg-red-900 text-white hover:bg-red-800'} px-6 py-3 font-serif font-medium transition-colors`}
-                      >
-                        View All Artworks
-                      </a>
-                    </div>
-                  </>
-                )}
+                <h3 className="text-xl font-serif font-light text-gray-900 mb-4">No Artworks Found</h3>
+                <p className="text-gray-600 font-serif mb-6">No artworks match your current filter criteria.</p>
+                <a
+                  href="/gallery"
+                  className="bg-red-900 text-white px-6 py-3 font-serif font-medium hover:bg-red-800 transition-colors"
+                >
+                  View All Artworks
+                </a>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredAndSortedArtworks.map((artwork) => (
-                  <div key={artwork.id} className="group">
-                    <div className="relative">
-                      <ArtworkCard artwork={artwork} />
-                      
-                      {/* Zoom Button */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setZoomedImage(artwork);
-                        }}
-                        className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
-                        title="View larger image"
-                      >
-                        <ZoomIn className="h-5 w-5 text-gray-900" />
-                      </button>
-                    </div>
+                  <div key={artwork.id} className="group relative">
+                    <ArtworkCard artwork={artwork} />
+                    
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setZoomedImage(artwork);
+                      }}
+                      className="absolute top-3 left-3 bg-white/90 hover:bg-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-20"
+                      title="View larger image"
+                    >
+                      <ZoomIn className="h-4 w-4 text-gray-900" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -424,7 +344,6 @@ function GalleryContent() {
           className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-3"
           onClick={() => setZoomedImage(null)}
         >
-          {/* Close Button */}
           <button
             onClick={() => setZoomedImage(null)}
             className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors z-10"
@@ -432,7 +351,6 @@ function GalleryContent() {
             <X className="h-8 w-8" />
           </button>
 
-          {/* Zoomed Image */}
           <div 
             className="relative max-w-6xl max-h-full"
             onClick={(e) => e.stopPropagation()}
@@ -443,7 +361,6 @@ function GalleryContent() {
               className="max-w-full max-h-[90vh] object-contain"
             />
             
-            {/* Image Info */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">
               <div className="text-white">
                 <h3 className="text-xl font-serif font-medium mb-1">
@@ -463,7 +380,6 @@ function GalleryContent() {
             </div>
           </div>
 
-          {/* Instructions */}
           <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
             <p className="text-white text-sm font-serif opacity-75">
               Click outside image or press ESC to close
@@ -475,7 +391,6 @@ function GalleryContent() {
   );
 }
 
-// Loading component for Suspense
 function GalleryLoading() {
   return (
     <div className="min-h-screen bg-white">

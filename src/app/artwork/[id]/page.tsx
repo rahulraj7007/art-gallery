@@ -3,8 +3,8 @@ import { db } from '@/lib/firebase/config';
 import { notFound } from 'next/navigation';
 import ArtworkClient from './ArtworkClient';
 
-// Updated interface to match your flexible artwork system
-interface Artwork {
+// ✅ FIXED: Added export keyword
+export interface Artwork {
   id: string;
   title: string;
   artist: string;

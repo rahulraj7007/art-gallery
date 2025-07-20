@@ -90,7 +90,7 @@ export default function Footer() {
             {/* Social Media */}
             <div className="pt-2">
               <a 
-                href="https://instagram.com/ajaerikusson" 
+                href="https://instagram.com/ajaeriksson" 
                 className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
                 target="_blank"
                 rel="noopener noreferrer"

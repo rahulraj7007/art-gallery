@@ -12,7 +12,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['firebasestorage.googleapis.com'],
+    domains: [
+      'firebasestorage.googleapis.com',
+      'images.unsplash.com',  // Add this line for Unsplash images
+    ],
   },
 };
 
