@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, Eye, Mail, CheckCircle } from 'lucide-react';
+import { Heart, Eye, Mail, CheckCircle, ImageIcon } from 'lucide-react';
 import { useWishlistStore, createOriginalWishlistItem } from '@/lib/store/wishlistStore';
 
 interface Artwork {
@@ -10,7 +10,8 @@ interface Artwork {
   title: string;
   artist: string;
   price?: number;
-  imageUrl: string;
+  imageUrl?: string; // Keep for backward compatibility
+  imageUrls?: string[]; // New multiple images array
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -37,6 +38,22 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
   // Check if original artwork is in wishlist (not prints)
   const artworkInWishlist = isInWishlist(artwork.id);
 
+  // Get the primary image URL with proper fallbacks
+  const getPrimaryImageUrl = (): string | null => {
+    // First check for new imageUrls array
+    if (artwork.imageUrls && artwork.imageUrls.length > 0) {
+      return artwork.imageUrls[0];
+    }
+    // Fallback to old imageUrl property for backward compatibility
+    if (artwork.imageUrl) {
+      return artwork.imageUrl;
+    }
+    // No image available
+    return null;
+  };
+
+  const primaryImageUrl = getPrimaryImageUrl();
+
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -45,7 +62,10 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
       removeFromWishlist(artwork.id);
     } else {
       // Use the helper function to create properly typed original wishlist item
-      const wishlistItem = createOriginalWishlistItem(artwork);
+      const wishlistItem = createOriginalWishlistItem({
+        ...artwork,
+        imageUrl: primaryImageUrl || '', // Use primary image for wishlist
+      });
       addToWishlist(wishlistItem);
     }
   };
@@ -95,22 +115,31 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
   return (
     <div className="group">
-      {/* CLEAN IMAGE CONTAINER - NO FRAMES */}
+      {/* CLEAN IMAGE CONTAINER - NO FRAMES OR BORDERS */}
       <div className="relative mb-4">
-        {/* Simple container for uploaded images with frames already applied */}
-        <div className="w-full aspect-square relative overflow-hidden bg-white rounded-sm shadow-sm group-hover:shadow-md transition-shadow duration-300">
-          {/* Direct image display - no additional styling */}
+        {/* Simple, clean container for uploaded images */}
+        <div className="w-full aspect-square relative overflow-hidden bg-gray-50 group-hover:shadow-sm transition-shadow duration-300">
+          {/* Direct image display - completely clean */}
           <Link href={`/artwork/${artwork.id}`} className="block w-full h-full">
-            <Image
-              src={artwork.imageUrl}
-              alt={artwork.title}
-              fill
-              className="transition-all duration-300 group-hover:scale-[1.02] object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+            {primaryImageUrl ? (
+              <Image
+                src={primaryImageUrl}
+                alt={artwork.title}
+                fill
+                className="transition-all duration-300 group-hover:scale-[1.01] object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                <div className="text-center text-gray-400">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                  <p className="text-sm">No image available</p>
+                </div>
+              </div>
+            )}
 
-            {/* Subtle overlay on hover */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/2 transition-colors duration-300"></div>
+            {/* Very subtle overlay on hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/1 transition-colors duration-300"></div>
           </Link>
 
           {/* Wishlist button - Enhanced with red theme */}

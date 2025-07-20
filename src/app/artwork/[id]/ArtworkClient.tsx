@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/lib/store/cartStore';
 import { useWishlistStore, createOriginalWishlistItem } from '@/lib/store/wishlistStore';
-import { ArrowLeft, Mail, ShoppingCart, Heart, Share2, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, ShoppingCart, Heart, Share2, Check, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Toast from '@/components/ui/Toast';
@@ -17,7 +17,8 @@ interface Artwork {
   title: string;
   artist: string;
   price?: number;
-  imageUrl: string;
+  imageUrl?: string; // Keep for backward compatibility
+  imageUrls?: string[]; // New multiple images array
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -34,6 +35,7 @@ interface ArtworkClientProps {
 export default function ArtworkClient({ artwork }: ArtworkClientProps) {
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // NEW: For image carousel
   
   // Toast notification states
   const [showToast, setShowToast] = useState(false);
@@ -50,10 +52,62 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
     loadWishlist 
   } = useWishlistStore();
 
+  // Get all available images with proper fallbacks
+  const getAvailableImages = (): string[] => {
+    // First check for new imageUrls array
+    if (artwork?.imageUrls && artwork.imageUrls.length > 0) {
+      return artwork.imageUrls;
+    }
+    // Fallback to old imageUrl property for backward compatibility
+    if (artwork?.imageUrl) {
+      return [artwork.imageUrl];
+    }
+    // No images available
+    return [];
+  };
+
+  const availableImages = getAvailableImages();
+  const hasMultipleImages = availableImages.length > 1;
+  const currentImageUrl = availableImages[currentImageIndex] || null;
+
+  // Navigation functions for multiple images
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % availableImages.length);
+    setImageLoaded(false); // Reset loading state
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + availableImages.length) % availableImages.length);
+    setImageLoaded(false); // Reset loading state
+  };
+
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
+    setImageLoaded(false); // Reset loading state
+  };
+
   // Load wishlist on component mount
   useEffect(() => {
     loadWishlist();
   }, [loadWishlist]);
+
+  // Keyboard navigation for multiple images
+  useEffect(() => {
+    if (!hasMultipleImages) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        setCurrentImageIndex((prev) => (prev - 1 + availableImages.length) % availableImages.length);
+        setImageLoaded(false);
+      } else if (e.key === 'ArrowRight') {
+        setCurrentImageIndex((prev) => (prev + 1) % availableImages.length);
+        setImageLoaded(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [hasMultipleImages, availableImages.length]);
 
   // Check if artwork is in wishlist
   const isWishlisted = artwork ? isInWishlist(artwork.id) : false;
@@ -150,7 +204,7 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
         id: artwork.id,
         title: artwork.title,
         artist: artwork.artist,
-        imageUrl: artwork.imageUrl,
+        imageUrl: currentImageUrl || '', // Use current displayed image for wishlist
         price: artwork.price,
         availabilityType: artwork.availabilityType
       });
@@ -254,66 +308,20 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
-            {/* Image Section with Dark Wood Frame - Matching Gallery Cards */}
+            {/* Image Section with Multiple Images Support */}
             <div className="lg:col-span-4 space-y-6">
-              {/* Dark Wood Framed Image - Exactly like ArtworkCard */}
+              {/* Multiple Images Gallery */}
               <div className="relative group">
-                {/* Main frame container - responsive size */}
+                {/* Main Image Display Container - Clean without dark frame */}
                 <div className="w-full max-w-2xl mx-auto">
-                  <div 
-                    className="w-full aspect-square relative transition-all duration-300"
-                    style={{
-                      background: 'linear-gradient(135deg, #2d2622 0%, #1a1714 15%, #2d2622 30%, #1a1714 45%, #2d2622 60%, #1a1714 75%, #2d2622 100%)',
-                      padding: '1px',
-                      borderRadius: '2px',
-                      border: '0.2px solid #1a1714',
-                      boxShadow: `
-                        0 4px 8px rgba(0, 0, 0, 0.15),
-                        0 8px 16px rgba(0, 0, 0, 0.1),
-                        0 16px 32px rgba(0, 0, 0, 0.05),
-                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
-                      `,
-                      transform: 'translateZ(0)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = `
-                        0 6px 12px rgba(0, 0, 0, 0.2),
-                        0 12px 24px rgba(0, 0, 0, 0.15),
-                        0 24px 48px rgba(0, 0, 0, 0.1),
-                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
-                      `;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = `
-                        0 4px 8px rgba(0, 0, 0, 0.15),
-                        0 8px 16px rgba(0, 0, 0, 0.1),
-                        0 16px 32px rgba(0, 0, 0, 0.05),
-                        inset 0 1px 2px rgba(255, 255, 255, 0.1)
-                      `;
-                    }}
-                  >
-                    {/* Inner frame detail */}
-                    <div 
-                      className="w-full h-full relative"
-                      style={{
-                        background: 'linear-gradient(135deg, #1a1714 0%, #2d2622 50%, #1a1714 100%)',
-                        padding: '1px',
-                        borderRadius: '1px'
-                      }}
-                    >
-                      {/* Image container - NO WHITE SPACES */}
-                      <div 
-                        className="w-full h-full bg-white relative overflow-hidden"
-                        style={{ 
-                          borderRadius: '1px',
-                          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
-                        }}
-                      >
+                  <div className="w-full aspect-square relative overflow-hidden bg-gray-50">
+                    {currentImageUrl ? (
+                      <>
                         <Image
-                          src={artwork.imageUrl}
-                          alt={artwork.title}
+                          src={currentImageUrl}
+                          alt={`${artwork.title} - Image ${currentImageIndex + 1}`}
                           fill
-                          className={`transition-all duration-700 group-hover:scale-[1.02] object-cover ${
+                          className={`transition-all duration-300 object-cover ${
                             imageLoaded ? 'opacity-100' : 'opacity-0'
                           }`}
                           style={{ 
@@ -330,26 +338,46 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                         
                         {/* Loading state */}
                         {!imageLoaded && (
-                          <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                          <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
+                            <div className="text-gray-400 text-sm">Loading...</div>
+                          </div>
                         )}
 
-                        {/* Invisible overlay to prevent image interactions */}
-                        <div 
-                          className="absolute inset-0 bg-transparent"
-                          onContextMenu={(e) => e.preventDefault()}
-                          onDragStart={(e) => e.preventDefault()}
-                          style={{ userSelect: 'none' }}
-                        />
+                        {/* Navigation Arrows - Only show if multiple images */}
+                        {hasMultipleImages && (
+                          <>
+                            <button
+                              onClick={prevImage}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeft className="h-6 w-6 text-gray-900" />
+                            </button>
+
+                            <button
+                              onClick={nextImage}
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
+                              aria-label="Next image"
+                            >
+                              <ChevronRight className="h-6 w-6 text-gray-900" />
+                            </button>
+
+                            {/* Image Counter */}
+                            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                              {currentImageIndex + 1} / {availableImages.length}
+                            </div>
+                          </>
+                        )}
 
                         {/* Wishlist button overlay */}
                         <button
                           onClick={handleWishlist}
-                          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
+                          className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
                           title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                         >
                           <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
                             <Heart
-                              className={`h-4 w-4 transition-colors duration-200 ${
+                              className={`h-5 w-5 transition-colors duration-200 ${
                                 isWishlisted 
                                   ? 'text-red-900 fill-current' 
                                   : 'text-gray-700 hover:text-red-900'
@@ -357,11 +385,52 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                             />
                           </div>
                         </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-6xl mb-4">🖼️</div>
+                          <p className="text-gray-500 text-lg">No image available</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Image Thumbnails - Only show if multiple images */}
+              {hasMultipleImages && (
+                <div className="w-full max-w-2xl mx-auto">
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                    {availableImages.map((imageUrl, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToImage(index)}
+                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 ${
+                          index === currentImageIndex
+                            ? 'ring-2 ring-red-900 ring-offset-2 shadow-lg'
+                            : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-1 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <Image
+                          src={imageUrl}
+                          alt={`${artwork.title} - Thumbnail ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="100px"
+                        />
+                        {/* Thumbnail overlay for current image */}
+                        {index === currentImageIndex && (
+                          <div className="absolute inset-0 bg-red-900/10" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-center text-sm text-gray-500 mt-3">
+                    Click thumbnails to view different images • Use ← → arrow keys to navigate
+                  </p>
+                </div>
+              )}
 
               {/* Artwork Technical Info */}
               <div className="space-y-3 text-sm font-serif text-gray-600">
@@ -376,6 +445,10 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
                 )}
                 {artwork.category && (
                   <p><span className="font-medium">Category:</span> {artwork.category}</p>
+                )}
+                {/* Show image count if multiple */}
+                {hasMultipleImages && (
+                  <p><span className="font-medium">Images:</span> {availableImages.length} views available</p>
                 )}
               </div>
             </div>
@@ -664,10 +737,12 @@ export default function ArtworkClient({ artwork }: ArtworkClientProps) {
 
           {/* Room Gallery Section - See It In Your Space */}
           <div className="mt-20 border-t border-gray-100 pt-16">
-            <ArtworkRoomGallery 
-              artworkImageUrl={artwork.imageUrl}
-              artworkTitle={artwork.title}
-            />
+            {currentImageUrl && (
+              <ArtworkRoomGallery 
+                artworkImageUrl={currentImageUrl}
+                artworkTitle={artwork.title}
+              />
+            )}
           </div>
 
           {/* Print Options Section */}
