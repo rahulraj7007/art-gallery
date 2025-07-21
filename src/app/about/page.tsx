@@ -7,7 +7,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Clean Header */}
-      <section className="pt-16 pb-12 border-b border-gray-100">
+      <section className="pt-4 pb-2 border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-serif font-light text-gray-900 mb-4">
             Aja Eriksson von Weissenberg
@@ -18,23 +18,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Artist Statement */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-2xl font-serif font-medium text-gray-900 mb-8">Artist Statement</h2>
-            <blockquote className="text-xl font-serif italic text-gray-700 leading-relaxed border-l-4 border-gray-200 pl-8 mx-auto max-w-3xl text-left">
-              "My works move between light and dark, longing and farewell. The motifs return, 
-              like old friends. You might need to rest for a bit, as age makes itself heard. 
-              You lie down on the sofa. Then unexpected sneaks back into the image again. 
-              Situations arise, with new stories."
-            </blockquote>
-            <p className="text-gray-600 font-serif mt-6">— Aja Eriksson von Weissenberg</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Artist Image Section - NEW */}
+      {/* Artist Image Section - MOVED TO TOP */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="relative overflow-hidden rounded-lg shadow-xl">
@@ -58,8 +42,24 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Biography */}
+      {/* Artist Statement */}
       <section className="py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl font-serif font-medium text-gray-900 mb-8">Artist Statement</h2>
+            <blockquote className="text-xl font-serif italic text-gray-700 leading-relaxed border-l-4 border-gray-200 pl-8 mx-auto max-w-3xl text-left">
+              "My works move between light and dark, longing and farewell. The motifs return, 
+              like old friends. You might need to rest for a bit, as age makes itself heard. 
+              You lie down on the sofa. Then unexpected sneaks back into the image again. 
+              Situations arise, with new stories."
+            </blockquote>
+            <p className="text-gray-600 font-serif mt-6">— Aja Eriksson von Weissenberg</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Biography */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             <div className="space-y-8">
@@ -151,7 +151,7 @@ export default function AboutPage() {
       </section>
 
       {/* Legacy Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-serif font-light text-gray-900 mb-8">

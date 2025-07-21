@@ -69,7 +69,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Clean Header */}
-      <section className="pt-16 pb-12 border-b border-gray-100">
+      <section className="pt-6 pb-4 border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-serif font-light text-gray-900 mb-6">
             Contact

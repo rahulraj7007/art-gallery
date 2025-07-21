@@ -92,7 +92,7 @@ function PaperPrintCard({ artwork }: { artwork: Artwork }) {
   return (
     <div className="group">
       {/* Image Container - CLEAN, NO FRAMES */}
-      <div className="relative aspect-[4/5] overflow-hidden mb-4 bg-gray-50">
+      <div className="relative aspect-square overflow-hidden mb-4 bg-gray-50">
         {imageUrl ? (
           <>
             <Link href={`/artwork/${artwork.id}/print?type=paper`}>
@@ -150,17 +150,21 @@ function PaperPrintCard({ artwork }: { artwork: Artwork }) {
         )}
       </div>
 
-      {/* Print-Specific Content */}
+      {/* Print-Specific Content - Updated to match gallery style */}
       <div className="space-y-2">
-        <Link href={`/artwork/${artwork.id}/print?type=paper`}>
-          <h3 className="font-serif font-light text-gray-900 hover:text-red-900 transition-colors text-lg leading-tight">
-            {artwork.title}
+        {/* Title with "Fine Art Print" - Center Aligned */}
+        <Link href={`/artwork/${artwork.id}/print?type=paper`} className="block">
+          <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight text-center">
+            {artwork.title} Fine Art Print
           </h3>
         </Link>
         
-        <p className="text-sm font-serif text-gray-600">
-          Paper Print • From 387 SEK
-        </p>
+        {/* Price - Center Aligned */}
+        <div className="text-center">
+          <p className="text-base font-serif text-gray-900 font-medium">
+            From 387 KR
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -302,7 +306,7 @@ export default function PaperPrintsGallery() {
               </div>
               <div>
                 <h3 className="font-serif font-medium text-gray-900 mb-2">Sizes Available</h3>
-                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 387 to 1,803 SEK</p>
+                <p className="text-sm font-serif text-gray-600">A4, A3, A2, A1 - 387 to 1,803 KR</p>
               </div>
             </div>
           </div>
@@ -403,7 +407,7 @@ export default function PaperPrintsGallery() {
                   Museum-quality Enhanced Matte Paper with brilliant color reproduction
                 </p>
                 <p className="text-gray-300 font-serif text-sm">
-                  Available in A4, A3, A2, A1 sizes • From 387 SEK
+                  Available in A4, A3, A2, A1 sizes • From 387 KR
                 </p>
               </div>
             </div>

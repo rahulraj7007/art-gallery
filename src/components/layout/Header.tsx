@@ -385,7 +385,46 @@ export default function Header() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
             </Link>
 
-            {/* Collections Dropdown */}
+            {/* Shop Prints Dropdown - MOVED BEFORE COLLECTIONS */}
+            <div 
+              className="relative" 
+              ref={shopMenuRef}
+              onMouseEnter={handleShopMenuEnter}
+              onMouseLeave={handleShopMenuLeave}
+            >
+              <div className="relative flex items-center space-x-1 text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group cursor-pointer">
+                <span>SHOP PRINTS</span>
+                <ChevronDown className="h-3 w-3" />
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
+              </div>
+
+              {isShopMenuOpen && (
+                <div 
+                  className="absolute top-full left-0 mt-1 w-52 bg-white border border-gray-100 shadow-lg py-2 rounded-lg z-50"
+                  onMouseEnter={handleShopMenuEnter}
+                  onMouseLeave={handleShopMenuLeave}
+                >
+                  <Link
+                    href="/prints/paper"
+                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    PAPER PRINTS
+                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
+                  </Link>
+                  <Link
+                    href="/prints/canvas"
+                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    CANVAS PRINTS
+                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Collections Dropdown - MOVED AFTER SHOP PRINTS */}
             {collections.length > 0 && (
               <div 
                 className="relative" 
@@ -437,45 +476,6 @@ export default function Header() {
               </div>
             )}
 
-            {/* Shop Prints Dropdown - Updated */}
-            <div 
-              className="relative" 
-              ref={shopMenuRef}
-              onMouseEnter={handleShopMenuEnter}
-              onMouseLeave={handleShopMenuLeave}
-            >
-              <div className="relative flex items-center space-x-1 text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group cursor-pointer">
-                <span>SHOP PRINTS</span>
-                <ChevronDown className="h-3 w-3" />
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
-              </div>
-
-              {isShopMenuOpen && (
-                <div 
-                  className="absolute top-full left-0 mt-1 w-52 bg-white border border-gray-100 shadow-lg py-2 rounded-lg z-50"
-                  onMouseEnter={handleShopMenuEnter}
-                  onMouseLeave={handleShopMenuLeave}
-                >
-                  <Link
-                    href="/prints/paper"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    PAPER PRINTS
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
-                  <Link
-                    href="/prints/canvas"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    CANVAS PRINTS
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
-                </div>
-              )}
-            </div>
-
             <Link
               href="/about"
               className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
@@ -526,7 +526,28 @@ export default function Header() {
                 AVAILABLE ARTWORK
               </Link>
 
-              {/* Mobile Collections Section */}
+              {/* Mobile Shop Prints Section - MOVED BEFORE COLLECTIONS */}
+              <div className="space-y-2">
+                <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">SHOP PRINTS</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    href="/prints/paper"
+                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    PAPER PRINTS
+                  </Link>
+                  <Link
+                    href="/prints/canvas"
+                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    CANVAS PRINTS
+                  </Link>
+                </div>
+              </div>
+
+              {/* Mobile Collections Section - MOVED AFTER SHOP PRINTS */}
               {collections.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">COLLECTIONS</div>
@@ -560,27 +581,6 @@ export default function Header() {
                   </div>
                 </div>
               )}
-
-              {/* Mobile Shop Prints Section - Updated */}
-              <div className="space-y-2">
-                <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">SHOP PRINTS</div>
-                <div className="pl-4 space-y-2">
-                  <Link
-                    href="/prints/paper"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    PAPER PRINTS
-                  </Link>
-                  <Link
-                    href="/prints/canvas"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    CANVAS PRINTS
-                  </Link>
-                </div>
-              </div>
 
               <Link
                 href="/about"

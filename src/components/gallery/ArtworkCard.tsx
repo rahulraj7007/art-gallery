@@ -106,13 +106,6 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
   const availabilityInfo = getAvailabilityInfo();
   const showPrice = (artwork.availabilityType === 'for-sale' || !artwork.availabilityType) && artwork.price;
 
-  // Create the second line info (dimensions, category, year)
-  const getSecondLineInfo = () => {
-    const parts = [];
-    if (artwork.dimensions) parts.push(artwork.dimensions);
-    return parts.join(' • ');
-  };
-
   return (
     <div className="group">
       {/* CLEAN IMAGE CONTAINER - NO FRAMES OR BORDERS */}
@@ -180,38 +173,23 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
       </div>
 
       {/* Content Section - Clean Typography */}
-      <div className="space-y-3">
-        {/* Title and Price Row */}
-        <div className="flex items-baseline justify-between space-x-4">
-          {/* Left: Title */}
-          <Link href={`/artwork/${artwork.id}`} className="flex-shrink-0">
-            <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight">
-              {artwork.title}
-            </h3>
-          </Link>
-
-          {/* Right: Price or Availability */}
-          <div className="flex-shrink-0">
-            {showPrice ? (
-              <p className="text-base font-serif text-gray-900 font-medium">
-                {artwork.price?.toLocaleString()} SEK
-              </p>
-            ) : availabilityInfo ? (
-              <p className={`text-sm font-serif ${availabilityInfo.color}`}>
-                {availabilityInfo.label}
-              </p>
-            ) : (
-              <p className="text-sm font-serif text-gray-600">
-                Contact for price
-              </p>
+      <div className="space-y-2">
+        {/* Title and Dimensions - Center Aligned */}
+        <Link href={`/artwork/${artwork.id}`} className="block">
+          <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight text-center">
+            {artwork.title}
+            {artwork.dimensions && (
+              <span className="font-serif font-medium text-gray-900 text-lg"> {artwork.dimensions}</span>
             )}
-          </div>
-        </div>
+          </h3>
+        </Link>
 
-        {/* Dimensions and Details */}
-        {getSecondLineInfo() && (
+        {/* Price - Center Aligned */}
+        {showPrice && (
           <div className="text-center">
-            <p className="text-sm font-serif text-gray-600">{getSecondLineInfo()}</p>
+            <p className="text-base font-serif text-gray-900 font-medium">
+              {artwork.price?.toLocaleString()} SEK
+            </p>
           </div>
         )}
       </div>
