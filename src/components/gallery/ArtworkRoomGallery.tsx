@@ -1,5 +1,6 @@
 // Dynamic Artwork Positioning Based on Actual Artwork Dimensions
 // Automatically adjusts size and position based on artwork aspect ratio
+// UPDATED: No frames - displays uploaded images cleanly as they already have frames
 
 'use client';
 
@@ -32,14 +33,26 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [artworkDimensions, setArtworkDimensions] = useState<{width: number; height: number} | null>(null);
 
+  // Early return if no valid image URL
+  if (!artworkImageUrl || artworkImageUrl.trim() === '') {
+    return null;
+  }
+
   // Load artwork dimensions
   useEffect(() => {
+    // Only load dimensions if we have a valid image URL
+    if (!artworkImageUrl || artworkImageUrl.trim() === '') return;
+    
     const img = document.createElement('img');
     img.onload = () => {
       setArtworkDimensions({
         width: img.naturalWidth,
         height: img.naturalHeight
       });
+    };
+    img.onerror = () => {
+      console.warn('Failed to load artwork image for room gallery');
+      setArtworkDimensions(null);
     };
     img.src = artworkImageUrl;
   }, [artworkImageUrl]);
@@ -213,9 +226,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                 <div className="absolute inset-0 bg-black bg-opacity-5"></div>
               </div>
 
-              {/* Dynamic Artwork Overlay - NO WHITE MAT */}
+              {/* Dynamic Artwork Overlay - CLEAN, NO BORDERS */}
               <div 
-                className="absolute border-2 border-gray-800 shadow-2xl transform hover:scale-105 transition-all duration-300 z-10 overflow-hidden"
+                className="absolute shadow-2xl transform hover:scale-105 transition-all duration-300 z-10 overflow-hidden"
                 style={{
                   top: currentArtworkPosition.top,
                   left: currentArtworkPosition.left,
@@ -224,13 +237,20 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                   boxShadow: '0 8px 25px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1)'
                 }}
               >
-                <Image
-                  src={artworkImageUrl}
-                  alt={artworkTitle}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 30vw"
-                />
+                {artworkImageUrl && artworkImageUrl.trim() !== '' ? (
+                  <Image
+                    src={artworkImageUrl}
+                    alt={artworkTitle}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 30vw"
+                    onError={() => console.warn('Failed to load artwork image in room')}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">No Image</span>
+                  </div>
+                )}
               </div>
 
               {/* Navigation Arrows */}
@@ -296,9 +316,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                     <div className="absolute inset-0 bg-black bg-opacity-10"></div>
                   </div>
 
-                  {/* Small Artwork with Dynamic Positioning - NO WHITE MAT */}
+                  {/* Small Artwork with Dynamic Positioning - CLEAN, NO BORDERS */}
                   <div 
-                    className="absolute border border-gray-800 shadow-md z-10 overflow-hidden"
+                    className="absolute shadow-md z-10 overflow-hidden"
                     style={{
                       top: thumbnailPosition.top,
                       left: thumbnailPosition.left,
@@ -306,13 +326,20 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                       height: thumbnailPosition.height,
                     }}
                   >
-                    <Image
-                      src={artworkImageUrl}
-                      alt={artworkTitle}
-                      fill
-                      className="object-cover"
-                      sizes="50px"
-                    />
+                    {artworkImageUrl && artworkImageUrl.trim() !== '' ? (
+                      <Image
+                        src={artworkImageUrl}
+                        alt={artworkTitle}
+                        fill
+                        className="object-cover"
+                        sizes="50px"
+                        onError={() => console.warn('Failed to load thumbnail artwork image')}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">No Image</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Room Type Label */}
@@ -389,9 +416,9 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                 <div className="absolute inset-0 bg-black bg-opacity-5"></div>
               </div>
 
-              {/* Artwork Overlay with Dynamic Positioning - NO WHITE MAT */}
+              {/* Artwork Overlay with Dynamic Positioning - CLEAN, NO BORDERS */}
               <div 
-                className="absolute border-4 border-gray-900 shadow-2xl z-10 overflow-hidden"
+                className="absolute shadow-2xl z-10 overflow-hidden"
                 style={{
                   top: currentArtworkPosition.top,
                   left: currentArtworkPosition.left,
@@ -400,13 +427,20 @@ export default function ArtworkRoomGallery({ artworkImageUrl, artworkTitle }: Ar
                   boxShadow: '0 12px 35px rgba(0,0,0,0.2)'
                 }}
               >
-                <Image
-                  src={artworkImageUrl}
-                  alt={artworkTitle}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+                {artworkImageUrl && artworkImageUrl.trim() !== '' ? (
+                  <Image
+                    src={artworkImageUrl}
+                    alt={artworkTitle}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    onError={() => console.warn('Failed to load fullscreen artwork image')}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">No Image Available</span>
+                  </div>
+                )}
               </div>
             </div>
 

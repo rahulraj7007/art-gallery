@@ -1,4 +1,4 @@
-// Enhanced src/components/layout/Header.tsx (With Fixed Shop Links)
+// Enhanced src/components/layout/Header.tsx (With Updated Navigation)
 
 'use client';
 
@@ -370,7 +370,7 @@ export default function Header() {
           {/* Desktop Navigation - Centered */}
           <nav className="hidden lg:flex items-center space-x-8">
             <Link
-              href="/gallery?type=originals"
+              href="/gallery"
               className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
             >
               ORIGINAL PAINTINGS
@@ -378,18 +378,10 @@ export default function Header() {
             </Link>
 
             <Link
-              href="/gallery?sort=newest"
+              href="/gallery?type=originals"
               className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
             >
-              NEW RELEASE
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
-            </Link>
-
-            <Link
-              href="/gallery?sort=popular"
-              className="relative text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group"
-            >
-              MOST POPULAR
+              AVAILABLE ARTWORK
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
             </Link>
 
@@ -445,7 +437,7 @@ export default function Header() {
               </div>
             )}
 
-            {/* Shop Art Dropdown - FIXED */}
+            {/* Shop Prints Dropdown - Updated */}
             <div 
               className="relative" 
               ref={shopMenuRef}
@@ -453,7 +445,7 @@ export default function Header() {
               onMouseLeave={handleShopMenuLeave}
             >
               <div className="relative flex items-center space-x-1 text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide pb-2 group cursor-pointer">
-                <span>SHOP ART</span>
+                <span>SHOP PRINTS</span>
                 <ChevronDown className="h-3 w-3" />
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-200 via-blue-200 to-yellow-200 group-hover:w-full transition-all duration-300 ease-out"></span>
               </div>
@@ -464,22 +456,6 @@ export default function Header() {
                   onMouseEnter={handleShopMenuEnter}
                   onMouseLeave={handleShopMenuLeave}
                 >
-                  <Link
-                    href="/gallery?type=originals"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    ORIGINALS
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
-                  <Link
-                    href="/prints"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    SHOP ALL PRINTS
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
                   <Link
                     href="/prints/paper"
                     className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
@@ -494,22 +470,6 @@ export default function Header() {
                     onClick={() => setIsShopMenuOpen(false)}
                   >
                     CANVAS PRINTS
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
-                  <Link
-                    href="/gallery?type=enquire-only"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    CONTACT FOR PRICE
-                    <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
-                  </Link>
-                  <Link
-                    href="/gallery?type=commissioned"
-                    className="relative block px-4 py-2 text-sm font-serif text-gray-700 hover:bg-gray-50 transition-colors group"
-                    onClick={() => setIsShopMenuOpen(false)}
-                  >
-                    COMMISSIONED WORKS
                     <span className="absolute bottom-0 left-4 w-0 h-px bg-gradient-to-r from-yellow-300 to-blue-300 group-hover:w-[calc(100%-2rem)] transition-all duration-200"></span>
                   </Link>
                 </div>
@@ -545,13 +505,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation - FIXED */}
+      {/* Mobile Navigation - Updated */}
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-100 py-6">
           <div className="max-w-7xl mx-auto px-6">
             <div className="space-y-6">
               <Link
-                href="/gallery?type=originals"
+                href="/gallery"
                 className="block text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -559,19 +519,11 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/gallery?sort=newest"
+                href="/gallery?type=originals"
                 className="block text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                NEW RELEASE
-              </Link>
-
-              <Link
-                href="/gallery?sort=popular"
-                className="block text-sm font-serif font-medium text-gray-700 hover:text-gray-900 transition-colors tracking-wide"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                MOST POPULAR
+                AVAILABLE ARTWORK
               </Link>
 
               {/* Mobile Collections Section */}
@@ -609,51 +561,23 @@ export default function Header() {
                 </div>
               )}
 
-              {/* Mobile Shop Art Section - FIXED */}
+              {/* Mobile Shop Prints Section - Updated */}
               <div className="space-y-2">
-                <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">SHOP ART</div>
+                <div className="text-sm font-serif font-medium text-gray-900 tracking-wide">SHOP PRINTS</div>
                 <div className="pl-4 space-y-2">
                   <Link
-                    href="/gallery?type=originals"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    ORIGINALS
-                  </Link>
-                  <Link
-                    href="/gallery?type=all-prints"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    SHOP ALL PRINTS
-                  </Link>
-                  <Link
-                    href="/gallery?type=paper-prints"
+                    href="/prints/paper"
                     className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     PAPER PRINTS
                   </Link>
                   <Link
-                    href="/gallery?type=canvas-prints"
+                    href="/prints/canvas"
                     className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     CANVAS PRINTS
-                  </Link>
-                  <Link
-                    href="/gallery?type=enquire-only"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    CONTACT FOR PRICE
-                  </Link>
-                  <Link
-                    href="/gallery?type=commissioned"
-                    className="block text-sm font-serif text-gray-600 hover:text-gray-900 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    COMMISSIONED WORKS
                   </Link>
                 </div>
               </div>

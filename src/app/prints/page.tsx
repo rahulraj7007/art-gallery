@@ -15,7 +15,8 @@ interface Artwork {
   title: string;
   artist: string;
   price?: number;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -27,6 +28,22 @@ interface Artwork {
   collection?: string;
   tags?: string[];
 }
+
+// Helper function to get valid image URL
+const getValidImageUrl = (artwork: Artwork): string | null => {
+  // Check imageUrls array first
+  if (artwork.imageUrls && Array.isArray(artwork.imageUrls)) {
+    const validUrl = artwork.imageUrls.find(url => url && url.trim() !== '');
+    if (validUrl) return validUrl;
+  }
+  
+  // Fallback to single imageUrl
+  if (artwork.imageUrl && artwork.imageUrl.trim() !== '') {
+    return artwork.imageUrl;
+  }
+  
+  return null;
+};
 
 const printSizes = {
   paper: [
@@ -43,9 +60,10 @@ const printSizes = {
   ]
 };
 
-// Print-specific ArtworkCard for All Prints with Tab Support
+// Print-specific ArtworkCard for All Prints with Tab Support - CLEAN, NO FRAMES
 function AllPrintCard({ artwork, activeTab }: { artwork: Artwork; activeTab: 'paper' | 'canvas' }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const imageUrl = getValidImageUrl(artwork);
   
   const { 
     addItem: addToWishlist, 
@@ -61,6 +79,8 @@ function AllPrintCard({ artwork, activeTab }: { artwork: Artwork; activeTab: 'pa
     e.preventDefault();
     e.stopPropagation();
     
+    if (!imageUrl) return; // Don't add to wishlist if no image
+    
     if (printInWishlist) {
       removeFromWishlist(printItemId);
     } else {
@@ -71,7 +91,7 @@ function AllPrintCard({ artwork, activeTab }: { artwork: Artwork; activeTab: 'pa
           id: artwork.id,
           title: artwork.title,
           artist: artwork.artist,
-          imageUrl: artwork.imageUrl
+          imageUrl: imageUrl
         },
         {
           size: 'a3',
@@ -89,15 +109,13 @@ function AllPrintCard({ artwork, activeTab }: { artwork: Artwork; activeTab: 'pa
 
   return (
     <div className="group">
-      {/* Image Container with Custom Light Frame */}
-      <div className="relative aspect-[4/5] overflow-hidden mb-4">
-        {/* Custom light frame */}
-        <div className="relative w-full h-full p-3 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-          {/* Image area */}
-          <div className="relative w-full h-full overflow-hidden">
+      {/* Image Container - CLEAN, NO FRAMES */}
+      <div className="relative aspect-[4/5] overflow-hidden mb-4 bg-gray-50">
+        {imageUrl ? (
+          <>
             <Link href={`/artwork/${artwork.id}/print?type=${activeTab}`}>
               <Image
-                src={artwork.imageUrl}
+                src={imageUrl}
                 alt={`${artwork.title} ${activeTab === 'paper' ? 'Paper' : 'Canvas'} Print`}
                 fill
                 className={`object-cover transition-all duration-700 group-hover:scale-[1.02] ${
@@ -119,57 +137,48 @@ function AllPrintCard({ artwork, activeTab }: { artwork: Artwork; activeTab: 'pa
             {/* Wishlist button */}
             <button
               onClick={handleWishlist}
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
               title={printInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <Heart
-                className={`h-5 w-5 transition-colors duration-200 ${
-                  printInWishlist 
-                    ? 'text-red-900 fill-current' 
-                    : 'text-gray-700 hover:text-red-900'
-                }`}
-              />
+              <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
+                <Heart
+                  className={`h-5 w-5 transition-colors duration-200 ${
+                    printInWishlist 
+                      ? 'text-red-900 fill-current' 
+                      : 'text-gray-700 hover:text-red-900'
+                  }`}
+                />
+              </div>
             </button>
 
             {/* Print Type Badge */}
             <div className="absolute top-3 left-3">
-              <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800">
+              <span className="bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-serif text-gray-800 rounded">
                 {activeTab === 'paper' ? 'Paper Print' : 'Canvas Print'}
               </span>
             </div>
-
-
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center p-4">
+              <div className="text-6xl mb-3">🖼️</div>
+              <p className="text-gray-500 font-serif text-sm">No image available</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Print-Specific Content */}
       <div className="space-y-2">
-        {/* Single Line: Print Title • Info • Price */}
-        <div className="flex items-baseline justify-between space-x-6">
-          {/* Left: Print Title */}
-          <Link href={`/artwork/${artwork.id}/print`} className="flex-shrink-0">
-            <h3 className="font-serif font-medium text-gray-900 hover:text-gray-600 transition-colors text-lg leading-tight">
-              {artwork.title} {activeTab === 'paper' ? 'Paper' : 'Canvas'} Print
-            </h3>
-          </Link>
-
-          {/* Center: Print Info */}
-          <div className="flex-1 text-center">
-            <p className="text-sm font-serif text-gray-600">
-              {activeTab === 'paper' ? 'Paper Print • Museum Quality' : 'Canvas Print • Gallery Quality'}
-            </p>
-          </div>
-          
-          {/* Right: Print Price Range */}
-          <div className="flex-shrink-0">
-            <p className="text-sm font-serif text-gray-900 font-medium">
-              From {startingPrice} SEK
-            </p>
-          </div>
-        </div>
-
-
+        <Link href={`/artwork/${artwork.id}/print?type=${activeTab}`}>
+          <h3 className="font-serif font-light text-gray-900 hover:text-red-900 transition-colors text-lg leading-tight">
+            {artwork.title}
+          </h3>
+        </Link>
+        
+        <p className="text-sm font-serif text-gray-600">
+          {activeTab === 'paper' ? 'Paper Print' : 'Canvas Print'} • From {startingPrice} SEK
+        </p>
       </div>
     </div>
   );
@@ -377,26 +386,30 @@ export default function AllPrintsGallery() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {artworks.map((artwork) => (
-                  <div key={artwork.id} className="group">
-                    <div className="relative">
+                {artworks.map((artwork) => {
+                  const imageUrl = getValidImageUrl(artwork);
+                  
+                  return (
+                    <div key={artwork.id} className="group relative">
                       <AllPrintCard artwork={artwork} activeTab={activeTab} />
                       
                       {/* Zoom Button - Same as Gallery */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setZoomedImage(artwork);
-                        }}
-                        className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
-                        title="View larger image"
-                      >
-                        <ZoomIn className="h-5 w-5 text-gray-900" />
-                      </button>
+                      {imageUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setZoomedImage(artwork);
+                          }}
+                          className="absolute top-3 left-3 bg-white/90 hover:bg-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-20"
+                          title="View larger image"
+                        >
+                          <ZoomIn className="h-4 w-4 text-gray-900" />
+                        </button>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -422,11 +435,17 @@ export default function AllPrintsGallery() {
             className="relative max-w-6xl max-h-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={zoomedImage.imageUrl}
-              alt={zoomedImage.title}
-              className="max-w-full max-h-[90vh] object-contain"
-            />
+            {getValidImageUrl(zoomedImage) ? (
+              <img
+                src={getValidImageUrl(zoomedImage)!}
+                alt={zoomedImage.title}
+                className="max-w-full max-h-[90vh] object-contain"
+              />
+            ) : (
+              <div className="flex items-center justify-center w-[600px] h-[400px] bg-gray-100">
+                <p className="text-gray-500 font-serif">No image available</p>
+              </div>
+            )}
             
             {/* Image Info */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">

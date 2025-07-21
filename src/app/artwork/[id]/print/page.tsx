@@ -1,6 +1,3 @@
-// Compact Print Page - Dropdown-Based Buying Section
-// Updated /app/artwork/[id]/print/page.tsx
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,17 +6,21 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Share2, Info, Truck, Shield, Award, ChevronDown, ChevronUp, Check, Loader2, ShoppingBag } from 'lucide-react';
+import { Heart, Share2, Info, Truck, Shield, Award, ChevronDown, ChevronUp, Check, Loader2, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
 import { useWishlistStore, createPrintWishlistItem } from '@/lib/store/wishlistStore';
 import Toast from '@/components/ui/Toast';
+
+// Import the Room Gallery component
+import ArtworkRoomGallery from '@/components/gallery/ArtworkRoomGallery';
 
 interface Artwork {
   id: string;
   title: string;
   artist: string;
   price?: number;
-  imageUrl: string;
+  imageUrl?: string; // Keep for backward compatibility
+  imageUrls?: string[]; // New multiple images array
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -72,6 +73,7 @@ export default function ArtworkPrintPage() {
   const [quantity, setQuantity] = useState(1);
   const [showDetails, setShowDetails] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // NEW: For image carousel
   
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -86,6 +88,43 @@ export default function ArtworkPrintPage() {
     loadWishlist 
   } = useWishlistStore();
 
+  // Get all available images with proper fallbacks
+  const getAvailableImages = (): string[] => {
+    if (!artwork) return [];
+    
+    // First check for new imageUrls array
+    if (artwork.imageUrls && artwork.imageUrls.length > 0) {
+      // Filter out empty strings
+      return artwork.imageUrls.filter(url => url && url.trim() !== '');
+    }
+    // Fallback to old imageUrl property for backward compatibility
+    if (artwork.imageUrl && artwork.imageUrl.trim() !== '') {
+      return [artwork.imageUrl];
+    }
+    // No images available
+    return [];
+  };
+
+  const availableImages = getAvailableImages();
+  const hasMultipleImages = availableImages.length > 1;
+  const currentImageUrl = availableImages[currentImageIndex] || null;
+
+  // Navigation functions for multiple images
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % availableImages.length);
+    setImageLoaded(false); // Reset loading state
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + availableImages.length) % availableImages.length);
+    setImageLoaded(false); // Reset loading state
+  };
+
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
+    setImageLoaded(false); // Reset loading state
+  };
+
   // Load wishlist on component mount
   useEffect(() => {
     loadWishlist();
@@ -97,6 +136,24 @@ export default function ArtworkPrintPage() {
       setSelectedType(typeParam);
     }
   }, [typeParam]);
+
+  // Keyboard navigation for multiple images
+  useEffect(() => {
+    if (!hasMultipleImages) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        setCurrentImageIndex((prev) => (prev - 1 + availableImages.length) % availableImages.length);
+        setImageLoaded(false);
+      } else if (e.key === 'ArrowRight') {
+        setCurrentImageIndex((prev) => (prev + 1) % availableImages.length);
+        setImageLoaded(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [hasMultipleImages, availableImages.length]);
 
   // Load artwork from Firebase
   useEffect(() => {
@@ -138,13 +195,13 @@ export default function ArtworkPrintPage() {
   const isInWishlist_Print = artwork ? isInWishlist(printItemId) : false;
 
   const handleAddToCart = () => {
-    if (artwork && currentSize && currentType) {
+    if (artwork && currentSize && currentType && currentImageUrl) {
       const printItem = {
         id: printItemId,
         title: `${artwork.title} - ${currentType.name} (${currentSize.name})`,
         artist: artwork.artist,
         price: currentPrice,
-        imageUrl: artwork.imageUrl,
+        imageUrl: currentImageUrl, // Use currently displayed image
         description: `Fine art print of "${artwork.title}" by ${artwork.artist}`,
         medium: `${currentType.name} - ${artwork.medium || 'Mixed Media'}`,
         dimensions: `${currentSize.dimensions} (${currentSize.inches})`,
@@ -172,7 +229,7 @@ export default function ArtworkPrintPage() {
 
   // Updated wishlist handling using wishlist store
   const handleWishlist = () => {
-    if (!artwork || !currentSize || !currentType) return;
+    if (!artwork || !currentSize || !currentType || !currentImageUrl) return;
     
     if (isInWishlist_Print) {
       // Remove from wishlist
@@ -185,7 +242,7 @@ export default function ArtworkPrintPage() {
           id: artwork.id,
           title: artwork.title,
           artist: artwork.artist,
-          imageUrl: artwork.imageUrl
+          imageUrl: currentImageUrl // Use currently displayed image
         },
         {
           size: selectedSize,
@@ -274,31 +331,133 @@ export default function ArtworkPrintPage() {
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-16">
           
-          {/* Product Image with Natural Aspect Ratio */}
+          {/* FIXED Image Section - NO CROPPING, Natural Aspect Ratio */}
           <div className="lg:col-span-4 mr-8">
-            {/* Custom Framed Image - Same as Artwork Page */}
-            <div className="inline-block">
-              <div className="p-4 shadow-xl border-2 group-hover:shadow-2xl transition-shadow duration-300" style={{ backgroundColor: '#f6dfb3', borderColor: '#e6cfb3' }}>
-                <div className="relative inline-block overflow-hidden">
-                  <Image
-                    src={artwork.imageUrl}
-                    alt={artwork.title}
-                    width={600}
-                    height={600}
-                    className={`transition-all duration-700 max-w-full h-auto ${
-                      imageLoaded ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    style={{ maxHeight: '70vh' }}
-                    onLoad={() => setImageLoaded(true)}
-                    priority
-                  />
-                  
-                  {/* Loading state */}
-                  {!imageLoaded && (
-                    <div className="absolute inset-0 bg-gray-100 animate-pulse min-h-[400px]" />
-                  )}
+            {/* Multiple Images Gallery Container - COMPLETELY CLEAN */}
+            <div className="space-y-6">
+              {/* Main Image Display with Navigation - NO FRAMES, NO CROPPING */}
+              <div className="relative group">
+                <div className="w-full max-w-2xl mx-auto">
+                  {/* FIXED: Removed aspect-square, added max-h-[600px] for reasonable height limit */}
+                  <div className="w-full relative overflow-hidden bg-gray-50" style={{ maxHeight: '600px' }}>
+                    {currentImageUrl ? (
+                      <>
+                        {/* FIXED: Changed from object-cover to object-contain to show full image */}
+                        <Image
+                          src={currentImageUrl}
+                          alt={`${artwork.title} - Image ${currentImageIndex + 1}`}
+                          width={800}
+                          height={600}
+                          className={`transition-all duration-700 w-full h-auto object-contain group-hover:scale-[1.01] ${
+                            imageLoaded ? 'opacity-100' : 'opacity-0'
+                          }`}
+                          style={{ 
+                            userSelect: 'none',
+                            WebkitUserDrag: 'none',
+                            pointerEvents: 'none',
+                            maxHeight: '600px'
+                          } as React.CSSProperties & { WebkitUserDrag: string }}
+                          onLoad={() => setImageLoaded(true)}
+                          onContextMenu={(e) => e.preventDefault()}
+                          draggable={false}
+                          priority
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                        
+                        {/* Loading state */}
+                        {!imageLoaded && (
+                          <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
+                            <div className="text-gray-400 text-sm">Loading...</div>
+                          </div>
+                        )}
+
+                        {/* Navigation Arrows - Only show if multiple images */}
+                        {hasMultipleImages && (
+                          <>
+                            <button
+                              onClick={prevImage}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeft className="h-6 w-6 text-gray-900" />
+                            </button>
+
+                            <button
+                              onClick={nextImage}
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
+                              aria-label="Next image"
+                            >
+                              <ChevronRight className="h-6 w-6 text-gray-900" />
+                            </button>
+
+                            {/* Image Counter */}
+                            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                              {currentImageIndex + 1} / {availableImages.length}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Wishlist button overlay */}
+                        <button
+                          onClick={handleWishlist}
+                          className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
+                          title={isInWishlist_Print ? 'Remove from wishlist' : 'Add to wishlist'}
+                        >
+                          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
+                            <Heart
+                              className={`h-5 w-5 transition-colors duration-200 ${
+                                isInWishlist_Print 
+                                  ? 'text-red-900 fill-current' 
+                                  : 'text-gray-700 hover:text-red-900'
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-6xl mb-4">🖼️</div>
+                          <p className="text-gray-500 text-lg">No image available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Image Thumbnails - Only show if multiple images */}
+              {hasMultipleImages && (
+                <div className="w-full max-w-2xl mx-auto">
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                    {availableImages.map((imageUrl, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToImage(index)}
+                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 ${
+                          index === currentImageIndex
+                            ? 'ring-2 ring-red-900 ring-offset-2 shadow-lg'
+                            : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-1 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <Image
+                          src={imageUrl}
+                          alt={`${artwork.title} - Thumbnail ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="100px"
+                          draggable={false}
+                        />
+                        {/* Thumbnail overlay for current image */}
+                        {index === currentImageIndex && (
+                          <div className="absolute inset-0 bg-red-900/10" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                </div>
+              )}
             </div>
             
             {/* Interactive Image Actions */}
@@ -330,7 +489,7 @@ export default function ArtworkPrintPage() {
           <div className="lg:col-span-3 ml-8">
             
             {/* Header - Compact */}
-            <div className="mb-6">
+            <div className="mb-4">
               <h1 className="text-3xl font-serif font-light text-gray-900 mb-2">
                 {artwork.title}
               </h1>
@@ -345,14 +504,14 @@ export default function ArtworkPrintPage() {
             {/* COMPACT BUYING FORM */}
             <div className="space-y-3">
               
-              {/* Print Type Selection - Compact Buttons */}
+              {/* Print Type Selection - Compact Buttons with Popular in Right Corner */}
               <div>
                 <h3 className="font-serif font-medium text-gray-900 mb-2 text-lg">Print Type</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {printTypes.map((type) => (
                     <div key={type.id} className="relative">
                       {type.popular && (
-                        <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-red-900 text-white text-xs px-2 py-0.5 rounded font-serif z-10">
+                        <span className="absolute -top-2 -right-2 bg-red-900 text-white text-xs px-2 py-0.5 rounded font-serif z-10">
                           Popular
                         </span>
                       )}
@@ -373,14 +532,14 @@ export default function ArtworkPrintPage() {
                 </div>
               </div>
 
-              {/* Size & Quantity - Dropdown Layout */}
+              {/* Size & Quantity - Dropdown Layout with Dark Red Borders */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-serif font-medium text-gray-900 mb-1.5 text-base">Size</label>
                   <select
                     value={selectedSize}
                     onChange={(e) => setSelectedSize(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif text-base"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-red-900 font-serif text-base"
                   >
                     {printSizes.map((size) => (
                       <option key={size.id} value={size.id}>
@@ -396,7 +555,7 @@ export default function ArtworkPrintPage() {
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     disabled={isAdding}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-serif text-base disabled:opacity-50"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-red-900 font-serif text-base disabled:opacity-50"
                   >
                     {[1, 2, 3, 4, 5].map(num => (
                       <option key={num} value={num}>{num}</option>
@@ -430,11 +589,13 @@ export default function ArtworkPrintPage() {
               {/* Add to Cart Button - Prominent */}
               <button
                 onClick={handleAddToCart}
-                disabled={isAdding}
+                disabled={isAdding || !currentImageUrl}
                 className={`w-full py-4 rounded-lg font-serif font-medium text-base transition-all duration-200 flex items-center justify-center space-x-2 ${
                   wasJustAdded && !isAdding
                     ? 'bg-green-600 text-white'
                     : isAdding
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                    : !currentImageUrl
                     ? 'bg-gray-400 text-white cursor-not-allowed'
                     : 'bg-red-900 text-white hover:bg-red-800 shadow-sm hover:shadow-md'
                 }`}
@@ -448,6 +609,10 @@ export default function ArtworkPrintPage() {
                   <>
                     <Check className="h-5 w-5" />
                     <span>Added to Cart!</span>
+                  </>
+                ) : !currentImageUrl ? (
+                  <>
+                    <span>No Image Available</span>
                   </>
                 ) : (
                   <>
@@ -476,87 +641,43 @@ export default function ArtworkPrintPage() {
                 </div>
               )}
 
-              {/* Delivery Summary - Compact */}
-              <div className="border-t border-gray-200 pt-3 space-y-1.5">
-                <div className="flex items-center space-x-2 text-base text-gray-600 font-serif">
-                  <Truck className="h-4 w-4" />
-                  <span>
-                    {selectedType === 'canvas' ? 
-                      '2-3 weeks delivery • 588 SEK shipping' : 
-                      '7-10 business days • Free shipping to Sweden'
-                    }
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 text-base text-gray-600 font-serif">
-                  <Shield className="h-4 w-4" />
-                  <span>30-day quality guarantee • Certificate included</span>
-                </div>
-              </div>
-
             </div>
 
             {/* Compact Information Dropdowns - Below main buying section */}
-            <div className="mt-8 space-y-3">
+            <div className="mt-6 space-y-2">
               
               {/* Materials & Specifications Dropdown */}
               <details className="border border-gray-200 rounded-lg">
-                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                <summary className="cursor-pointer p-3 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors text-lg">
                   Materials & Specifications
                 </summary>
-                <div className="p-4 pt-0 space-y-4 text-sm font-serif text-gray-700">
+                <div className="p-3 pt-0 space-y-3 font-serif text-gray-700">
                   <div>
-                    <p className="text-gray-800 leading-relaxed mb-3">
+                    <p className="text-gray-800 leading-relaxed mb-2 text-lg">
                       <strong>Paper prints</strong> use museum-quality Enhanced Matte Paper with multicolor, 
                       water-based inkjet printing technology for brilliant color reproduction.
                     </p>
-                    <p className="text-gray-800 leading-relaxed">
+                    <p className="text-gray-800 leading-relaxed text-lg">
                       <strong>Canvas prints</strong> are printed on premium textured, fade-resistant canvas that creates 
                       gallery-ready artwork with substantial depth and professional presentation.
                     </p>
                   </div>
-                  {/*
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-medium text-gray-800 mb-2">Enhanced Matte Paper:</p>
-                      <ul className="list-disc ml-4 space-y-1 text-xs">
-                        <li>Paper weight: 189 g/m²</li>
-                        <li>Paper thickness: 10.3 mil (0.26 mm)</li>
-                        <li>Opacity: 94% (excellent print clarity)</li>
-                        <li>ISO brightness: 104% (vibrant colors)</li>
-                        <li>Sourced from Japan (premium quality)</li>
-                        <li>Multicolor, water-based inkjet printing</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium text-gray-800 mb-2">Canvas:</p>
-                      <ul className="list-disc ml-4 space-y-1 text-xs">
-                        <li>Canvas thickness: 1.25″ (3.18 cm)</li>
-                        <li>Fabric weight: 344 g/m² (±25g/m²)</li>
-                        <li>Textured, fade-resistant canvas (OBA-Free)</li>
-                        <li>Hand-glued solid wood stretcher bars</li>
-                        <li>Mounting brackets included - ready to hang</li>
-                        <li>Acid-free, pH-neutral for archival quality</li>
-                      </ul>
-                    </div>
-                  </div>
-                  */}
                 </div>
               </details>
 
               {/* Size Guide Dropdown */}
               <details className="border border-gray-200 rounded-lg">
-                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                <summary className="cursor-pointer p-3 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors text-lg">
                   Size Guide & Dimensions
                 </summary>
-                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
-                  <div className="grid grid-cols-1 gap-2">
+                <div className="p-3 pt-0 space-y-2 text-lg font-serif text-gray-700">
+                  <div className="grid grid-cols-1 gap-1.5">
                     <p><strong>A4</strong> - 21 x 30 cm (8.3 x 11.7 in)</p>
                     <p><strong>A3</strong> - 30 x 40 cm (11.7 x 16.5 in)</p>
                     <p><strong>A2</strong> - 42 x 59.4 cm (16.5 x 23.4 in)</p>
                     <p><strong>A1</strong> - 59.4 x 84.1 cm (23.4 x 33.1 in)</p>
                   </div>
-                  <p className="text-gray-600 text-xs border-t pt-2">
+                  <p className="text-gray-600 text-base border-t pt-2">
                     <strong>Note:</strong> Paper poster sizes may vary up to 0.4″ (1 cm) due to production specifications.
                   </p>
                 </div>
@@ -564,37 +685,37 @@ export default function ArtworkPrintPage() {
 
               {/* Shipping & Production Dropdown */}
               <details className="border border-gray-200 rounded-lg">
-                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                <summary className="cursor-pointer p-3 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors text-lg">
                   Shipping & Production Times
                 </summary>
-                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 pt-0 space-y-2 text-lg font-serif text-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <p className="font-medium text-gray-800 mb-2">Production Times:</p>
-                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                      <p className="font-medium text-gray-800 mb-1.5">Production Times:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-base">
                         <li><strong>Enhanced Matte Paper:</strong> 4-5 business days</li>
                         <li><strong>Canvas prints:</strong> 9-16 business days</li>
                       </ul>
                     </div>
                     
                     <div>
-                      <p className="font-medium text-gray-800 mb-2">Shipping to Sweden:</p>
-                      <ul className="list-disc ml-4 space-y-1 text-xs">
+                      <p className="font-medium text-gray-800 mb-1.5">Shipping to Sweden:</p>
+                      <ul className="list-disc ml-4 space-y-1 text-base">
                         <li><strong>Paper prints:</strong> Additional 3-5 days (Free shipping)</li>
                         <li><strong>Canvas prints:</strong> Additional shipping time (588 SEK shipping cost)</li>
                       </ul>
                     </div>
                   </div>
                   
-                  <div className="border-t pt-3">
+                  <div className="border-t pt-2">
                     <p className="font-medium text-gray-800 mb-1">Total Delivery Time:</p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-base text-gray-600">
                       <strong>Paper prints:</strong> 7-10 business days • 
                       <strong>Canvas prints:</strong> 2-3 weeks total
                     </p>
                   </div>
                   
-                  <p className="text-gray-600 text-xs border-t pt-2">
+                  <p className="text-gray-600 text-base border-t pt-1.5">
                     All orders include secure packaging, insured shipping, and tracking information.
                   </p>
                 </div>
@@ -602,10 +723,10 @@ export default function ArtworkPrintPage() {
 
               {/* Quality Guarantee Dropdown */}
               <details className="border border-gray-200 rounded-lg">
-                <summary className="cursor-pointer p-4 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors">
+                <summary className="cursor-pointer p-3 font-serif font-medium text-gray-900 hover:bg-gray-50 transition-colors text-lg">
                   Quality Guarantee & Certificate
                 </summary>
-                <div className="p-4 pt-0 space-y-3 text-sm font-serif text-gray-700">
+                <div className="p-3 pt-0 space-y-2 text-lg font-serif text-gray-700">
                   <p>
                     We guarantee museum-quality prints with premium materials and professional printing technology. 
                     30-day satisfaction guarantee - if you're not completely happy, we'll make it right.
@@ -613,7 +734,7 @@ export default function ArtworkPrintPage() {
                   
                   <div>
                     <p className="font-medium text-gray-800 mb-1">What's Included:</p>
-                    <ul className="list-disc ml-4 space-y-1 text-xs">
+                    <ul className="list-disc ml-4 space-y-1 text-base">
                       <li>Certificate of authenticity signed by the artist</li>
                       <li>Premium print-on-demand with no minimums</li>
                       <li>Professional secure packaging</li>
@@ -627,6 +748,16 @@ export default function ArtworkPrintPage() {
             </div>
 
           </div>
+        </div>
+
+        {/* Room Gallery Section - See It In Your Space */}
+        <div className="mt-20 border-t border-gray-100 pt-16">
+          {currentImageUrl && (
+            <ArtworkRoomGallery 
+              artworkImageUrl={currentImageUrl}
+              artworkTitle={artwork.title}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           
           {/* Artist Info */}
           <div className="space-y-4">
@@ -37,7 +37,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Gallery Navigation */}
           <div className="space-y-4">
             <h4 className="text-base font-serif font-medium text-gray-900">
               Gallery
@@ -47,14 +47,62 @@ export default function Footer() {
                 href="/gallery" 
                 className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
               >
-                View All Works
+                All Original Paintings
               </Link>
               <Link 
-                href="/gallery?type=for-sale" 
+                href="/gallery?type=originals" 
                 className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
               >
-                Original Paintings
+                Available Artwork
               </Link>
+              <Link 
+                href="/collections" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                View Collections
+              </Link>
+              <Link 
+                href="/gallery?sort=newest" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                New Release
+              </Link>
+            </div>
+          </div>
+
+          {/* Shop Prints */}
+          <div className="space-y-4">
+            <h4 className="text-base font-serif font-medium text-gray-900">
+              Shop Prints
+            </h4>
+            <div className="space-y-2">
+              <Link 
+                href="/prints" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                All Prints
+              </Link>
+              <Link 
+                href="/prints/paper" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                Paper Prints
+              </Link>
+              <Link 
+                href="/prints/canvas" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                Canvas Prints
+              </Link>
+            </div>
+          </div>
+
+          {/* Information */}
+          <div className="space-y-4">
+            <h4 className="text-base font-serif font-medium text-gray-900">
+              Information
+            </h4>
+            <div className="space-y-2">
               <Link 
                 href="/about" 
                 className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
@@ -67,28 +115,16 @@ export default function Footer() {
               >
                 Contact & Commissions
               </Link>
-            </div>
-          </div>
-
-          {/* Exhibition & Social */}
-          <div className="space-y-4">
-            <h4 className="text-base font-serif font-medium text-gray-900">
-              Current Exhibition
-            </h4>
-            <div className="space-y-1">
-              <p className="text-gray-900 font-serif text-sm">
-                "Echoes of the North"
-              </p>
-              <p className="text-gray-600 font-serif text-sm">
-                Galleri Anna H, Göteborg
-              </p>
-              <p className="text-gray-500 font-serif text-xs">
-                Through August 2025
-              </p>
+              <Link 
+                href="/shipping" 
+                className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
+              >
+                Shipping Information
+              </Link>
             </div>
             
             {/* Social Media */}
-            <div className="pt-2">
+            <div className="pt-4">
               <a 
                 href="https://instagram.com/ajaeriksson" 
                 className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 font-serif text-sm"
@@ -100,6 +136,24 @@ export default function Footer() {
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
+          </div>
+        </div>
+
+        {/* Current Exhibition */}
+        <div className="border-t border-gray-100 pt-6 pb-6">
+          <div className="text-center">
+            <h4 className="text-base font-serif font-medium text-gray-900 mb-2">
+              Current Exhibition
+            </h4>
+            <p className="text-gray-900 font-serif text-sm">
+              "Echoes of the North"
+            </p>
+            <p className="text-gray-600 font-serif text-sm">
+              Galleri Anna H, Göteborg
+            </p>
+            <p className="text-gray-500 font-serif text-xs">
+              Through August 2025
+            </p>
           </div>
         </div>
 
@@ -128,10 +182,10 @@ export default function Footer() {
               Privacy
             </Link>
             <Link 
-              href="/shipping" 
+              href="/orders" 
               className="text-gray-500 hover:text-gray-700 font-serif text-sm transition-colors duration-200"
             >
-              Shipping
+              Order History
             </Link>
           </div>
         </div>

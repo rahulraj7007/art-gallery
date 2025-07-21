@@ -13,6 +13,7 @@ interface Artwork {
   artist: string;
   price?: number;
   imageUrl: string;
+  imageUrls?: string[];
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -33,9 +34,26 @@ interface CollectionGroup {
 
 export default function HomePage() {
   const [heroArtwork, setHeroArtwork] = useState<Artwork | null>(null);
+  const [printSectionArtwork, setPrintSectionArtwork] = useState<Artwork | null>(null);
   const [collections, setCollections] = useState<CollectionGroup[]>([]);
   const [totalCollections, setTotalCollections] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to get valid image URL
+  const getValidImageUrl = (artwork: Artwork): string | null => {
+    // Check imageUrls array first
+    if (artwork.imageUrls && Array.isArray(artwork.imageUrls)) {
+      const validUrl = artwork.imageUrls.find(url => url && url.trim() !== '');
+      if (validUrl) return validUrl;
+    }
+    
+    // Fallback to single imageUrl
+    if (artwork.imageUrl && artwork.imageUrl.trim() !== '') {
+      return artwork.imageUrl;
+    }
+    
+    return null;
+  };
 
   // Load hero artwork and collections from Firebase
   useEffect(() => {
@@ -52,9 +70,18 @@ export default function HomePage() {
           ...doc.data()
         })) as Artwork[];
 
-        // Set hero artwork (most recent)
-        if (allArtworks.length > 0) {
-          setHeroArtwork(allArtworks[0]);
+        // Find first artwork with a valid image for hero
+        const artworkWithImage = allArtworks.find(artwork => getValidImageUrl(artwork) !== null);
+        if (artworkWithImage) {
+          setHeroArtwork(artworkWithImage);
+        }
+
+        // Find a different artwork for print section (preferably portrait orientation)
+        const printArtwork = allArtworks.find(artwork => 
+          artwork.id !== artworkWithImage?.id && getValidImageUrl(artwork) !== null
+        );
+        if (printArtwork) {
+          setPrintSectionArtwork(printArtwork);
         }
 
         // Group artworks by collection
@@ -72,12 +99,16 @@ export default function HomePage() {
 
         // Convert to array and sort by count (largest collections first)
         const allCollectionsArray = Array.from(collectionMap.entries())
-          .map(([name, artworks]) => ({
-            name,
-            artworks: artworks.slice(0, 4), // Limit to 4 artworks per collection for display
-            count: artworks.length,
-            featuredArtwork: artworks[0] // Use first artwork as featured
-          }))
+          .map(([name, artworks]) => {
+            // Find first artwork with valid image as featured
+            const featuredArtwork = artworks.find(artwork => getValidImageUrl(artwork) !== null) || artworks[0];
+            return {
+              name,
+              artworks: artworks.slice(0, 4), // Limit to 4 artworks per collection for display
+              count: artworks.length,
+              featuredArtwork
+            };
+          })
           .filter(collection => collection.count > 0) // Only collections with artworks
           .sort((a, b) => b.count - a.count); // Sort by size
 
@@ -109,6 +140,8 @@ export default function HomePage() {
     );
   }
 
+  const heroImageUrl = heroArtwork ? getValidImageUrl(heroArtwork) : null;
+
   return (
     <>
       {/* Hero Image - Full Width Landscape */}
@@ -117,8 +150,8 @@ export default function HomePage() {
           <div 
             className="w-full h-full bg-cover bg-center"
             style={{
-              backgroundImage: heroArtwork 
-                ? `url('${heroArtwork.imageUrl}')`
+              backgroundImage: heroImageUrl 
+                ? `url('${heroImageUrl}')`
                 : `url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1920&h=1080&fit=crop')`
             }}
           ></div>
@@ -236,29 +269,38 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {collections.map((collection) => (
-                <Link
-                  key={collection.name}
-                  href={`/gallery?collection=${encodeURIComponent(collection.name)}`}
-                  className="group"
-                >
-                  <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
-                    <Image
-                      src={collection.featuredArtwork.imageUrl}
-                      alt={collection.name}
-                      width={400}
-                      height={500}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
-                    {collection.name}
-                  </h3>
-                  <p className="text-sm font-serif text-gray-600">
-                    {collection.count} {collection.count === 1 ? 'artwork' : 'artworks'}
-                  </p>
-                </Link>
-              ))}
+              {collections.map((collection) => {
+                const collectionImageUrl = getValidImageUrl(collection.featuredArtwork);
+                return (
+                  <Link
+                    key={collection.name}
+                    href={`/gallery?collection=${encodeURIComponent(collection.name)}`}
+                    className="group"
+                  >
+                    <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-4">
+                      {collectionImageUrl ? (
+                        <Image
+                          src={collectionImageUrl}
+                          alt={collection.name}
+                          width={400}
+                          height={500}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <span className="text-4xl text-gray-400">🖼️</span>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-serif font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
+                      {collection.name}
+                    </h3>
+                    <p className="text-sm font-serif text-gray-600">
+                      {collection.count} {collection.count === 1 ? 'artwork' : 'artworks'}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Call to action if more collections exist */}
@@ -304,12 +346,22 @@ export default function HomePage() {
               </div>
             </div>
             <div className="aspect-[4/5] bg-gray-100 overflow-hidden">
-              <div 
-                className="w-full h-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1578662535004-051ef0d7e18d?w=600&h=750&fit=crop')`
-                }}
-              ></div>
+              {printSectionArtwork && getValidImageUrl(printSectionArtwork) ? (
+                <Image
+                  src={getValidImageUrl(printSectionArtwork)!}
+                  alt="Art Print Sample"
+                  width={600}
+                  height={750}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div 
+                  className="w-full h-full bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url('https://images.unsplash.com/photo-1578662535004-051ef0d7e18d?w=600&h=750&fit=crop')`
+                  }}
+                ></div>
+              )}
             </div>
           </div>
         </div>
@@ -319,13 +371,22 @@ export default function HomePage() {
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="aspect-[4/5] bg-gray-100 overflow-hidden">
-              <div 
-                className="w-full h-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1494790108755-2616c90b2e5a?w=600&h=750&fit=crop')`
+            <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
+              <Image
+                src="/aja-artist-photo.jpg"
+                alt="Aja Eriksson von Weissenberg"
+                width={1200}
+                height={800}
+                className="absolute inset-0 w-full h-full object-cover object-right"
+                style={{ objectPosition: 'right center' }}
+                onError={(e) => {
+                  // Fallback to placeholder if image not found
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = `
+                    <div class="w-full h-full bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1494790108755-2616c90b2e5a?w=600&h=750&fit=crop')"></div>
+                  `;
                 }}
-              ></div>
+              />
             </div>
             <div>
               <h2 className="text-3xl md:text-4xl font-serif font-light text-gray-900 mb-6">

@@ -14,7 +14,8 @@ interface Artwork {
   title: string;
   artist: string;
   price?: number;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   description?: string;
   medium?: string;
   dimensions?: string;
@@ -25,6 +26,22 @@ interface Artwork {
   createdAt?: any;
   collection?: string;
 }
+
+// Helper function to get valid image URL
+const getValidImageUrl = (artwork: Artwork): string | null => {
+  // Check imageUrls array first
+  if (artwork.imageUrls && Array.isArray(artwork.imageUrls)) {
+    const validUrl = artwork.imageUrls.find(url => url && url.trim() !== '');
+    if (validUrl) return validUrl;
+  }
+  
+  // Fallback to single imageUrl
+  if (artwork.imageUrl && artwork.imageUrl.trim() !== '') {
+    return artwork.imageUrl;
+  }
+  
+  return null;
+};
 
 interface CollectionGroup {
   name: string;
@@ -262,23 +279,23 @@ function CollectionsContent() {
             <div className="max-w-[1400px] mx-auto px-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {currentCollection.artworks.map((artwork) => (
-                  <div key={artwork.id} className="group">
-                    <div className="relative">
-                      <ArtworkCard artwork={artwork} />
-                      
-                      {/* Zoom Button */}
+                  <div key={artwork.id} className="group relative">
+                    <ArtworkCard artwork={artwork} />
+                    
+                    {/* Zoom Button */}
+                    {getValidImageUrl(artwork) && (
                       <button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           setZoomedImage(artwork);
                         }}
-                        className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-10"
+                        className="absolute top-3 left-3 bg-white/90 hover:bg-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg z-20"
                         title="View larger image"
                       >
-                        <ZoomIn className="h-5 w-5 text-gray-900" />
+                        <ZoomIn className="h-4 w-4 text-gray-900" />
                       </button>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -305,11 +322,17 @@ function CollectionsContent() {
               className="relative max-w-6xl max-h-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={zoomedImage.imageUrl}
-                alt={zoomedImage.title}
-                className="max-w-full max-h-[90vh] object-contain"
-              />
+              {getValidImageUrl(zoomedImage) ? (
+                <img
+                  src={getValidImageUrl(zoomedImage)!}
+                  alt={zoomedImage.title}
+                  className="max-w-full max-h-[90vh] object-contain"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-[600px] h-[400px] bg-gray-100">
+                  <p className="text-gray-500 font-serif">No image available</p>
+                </div>
+              )}
               
               {/* Image Info */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">
@@ -393,29 +416,44 @@ function CollectionsContent() {
                     {/* Collection Preview */}
                     <div className="aspect-[4/5] relative overflow-hidden bg-gray-100">
                       {collection.artworks.length === 1 ? (
-                        <Image
-                          src={collection.featuredArtwork.imageUrl}
-                          alt={collection.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        getValidImageUrl(collection.featuredArtwork) ? (
+                          <Image
+                            src={getValidImageUrl(collection.featuredArtwork)!}
+                            alt={collection.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <p className="text-gray-500 font-serif">No image</p>
+                          </div>
+                        )
                       ) : (
                         <div className="grid grid-cols-2 gap-1 h-full">
-                          {collection.artworks.slice(0, 4).map((artwork, index) => (
-                            <div
-                              key={artwork.id}
-                              className={`relative overflow-hidden ${
-                                collection.artworks.length === 3 && index === 0 ? 'col-span-2' : ''
-                              }`}
-                            >
-                              <Image
-                                src={artwork.imageUrl}
-                                alt={artwork.title}
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          ))}
+                          {collection.artworks.slice(0, 4).map((artwork, index) => {
+                            const imageUrl = getValidImageUrl(artwork);
+                            return (
+                              <div
+                                key={artwork.id}
+                                className={`relative overflow-hidden ${
+                                  collection.artworks.length === 3 && index === 0 ? 'col-span-2' : ''
+                                }`}
+                              >
+                                {imageUrl ? (
+                                  <Image
+                                    src={imageUrl}
+                                    alt={artwork.title}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <span className="text-gray-400 text-xs">No image</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

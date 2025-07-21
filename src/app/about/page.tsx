@@ -1,5 +1,6 @@
 // src/app/about/page.tsx - Aja Eriksson von Weissenberg About Page
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Palette, Film, BookOpen, Hammer, Paintbrush } from 'lucide-react';
 
 export default function AboutPage() {
@@ -33,8 +34,32 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Biography */}
+      {/* Artist Image Section - NEW */}
       <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="relative overflow-hidden rounded-lg shadow-xl">
+            <Image
+              src="/images/aja-exhibition.jpg" // Update this path when you upload your image
+              alt="Aja Eriksson von Weissenberg at Christinehof Castle for the Rebel Girls exhibition"
+              width={1200}
+              height={600}
+              className="w-full h-auto object-cover"
+              priority
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-8">
+              <p className="text-white font-serif text-lg">
+                Aja Eriksson von Weissenberg at Christinehof Castle for the "Rebel Girls" exhibition
+              </p>
+              <p className="text-white/80 font-serif text-sm mt-2">
+                Featured painting: "Afternoon Tea in Stockholm 1793"
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Biography */}
+      <section className="py-16">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             <div className="space-y-8">
@@ -126,7 +151,7 @@ export default function AboutPage() {
       </section>
 
       {/* Legacy Section */}
-      <section className="py-16">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-serif font-light text-gray-900 mb-8">
@@ -167,7 +192,7 @@ export default function AboutPage() {
       </section>
 
       {/* Recognition Section */}
-      <section className="py-16 bg-gray-50 border-t border-gray-100">
+      <section className="py-16 border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center">
             <h3 className="text-2xl font-serif font-light text-gray-900 mb-8">Recognition & Experience</h3>

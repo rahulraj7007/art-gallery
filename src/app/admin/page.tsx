@@ -8,6 +8,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { BulkImageDelete } from './BulkImageDelete'; // Adjust path as needed
+
 import { 
   Package, 
   Users, 
@@ -1091,6 +1093,7 @@ export default function AdminDashboard() {
               {[
                 { id: 'overview', name: 'Overview', icon: TrendingUp },
                 { id: 'artworks', name: 'Artworks', icon: Package },
+                 { id: 'bulk-images', name: 'Bulk Delete Images', icon: ImageIcon }, //
                 { id: 'inquiries', name: 'Inquiries', icon: MessageSquare, badge: unreadInquiries },
                 { id: 'orders', name: 'Orders', icon: ShoppingBag },
                 { id: 'users', name: 'Users', icon: Users },
@@ -1249,7 +1252,12 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
-
+{activeTab === 'bulk-images' && (
+  <BulkImageDelete 
+    artworks={artworks} 
+    onComplete={loadArtworks}
+  />
+)}
           {/* Other tabs remain the same... */}
         </div>
 
